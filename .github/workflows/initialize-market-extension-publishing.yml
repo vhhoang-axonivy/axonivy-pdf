@@ -1,0 +1,106 @@
+name: Initialize Market Extension Publishing
+
+on: 
+  workflow_dispatch:
+    inputs:
+      productName:
+        description: |
+          Product Name (as displayed as name on the website), i.e. check Axon Ivy Portal at https://market.axonivy.com/portal#tab-description
+        required: true
+      productType:
+        description: 'Category – choose between Connector (REST/SOAP connection), Utils (little helper), or Demo (demo process, i.e. best practice)'
+        required: true
+        type: choice
+        options:
+          - connector
+          - utils
+          - demo
+      version:
+        description: 'Ivy version used for development (e.g. 12.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  initialize-market-extension:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This runs only on the master branch"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Validate Ivy version format
+        run: |
+          inputVersion="${{ github.event.inputs.version }}"
+          if ! [[ "$inputVersion" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?$ ]]; then
+            echo "❌ Invalid Ivy version format: $inputVersion"
+            echo "Expected format: x.y.z or x.y.z-SNAPSHOT"
+            exit 1
+          fi
+      
+      - name: Compute variables
+        id: vars
+        run: |
+          productName="${{ github.event.inputs.productName }}"
+          productType="${{ github.event.inputs.productType }}"
+
+          # Build groupId: remove productType suffix, replace '-' with '.'
+          lowercaseProductName=$(echo "$productName" | tr '[:upper:]' '[:lower:]')
+          groupId="com.axonivy.$productType.${lowercaseProductName/%-${productType}}"
+          groupId="${groupId//-/.}"
+
+          # Combined name for README file (e.g. "MyProduct Connector")
+          displayedType="$(tr '[:lower:]' '[:upper:]' <<< ${productType:0:1})${productType:1}"
+          displayName="$productName $displayedType"
+
+          echo "productName=$productName" >> $GITHUB_OUTPUT
+          echo "productType=$productType" >> $GITHUB_OUTPUT
+          echo "groupId=$groupId" >> $GITHUB_OUTPUT
+          echo "displayName=$displayName" >> $GITHUB_OUTPUT
+
+      - name: Update placeholders in file contents
+        run: |
+          productName="${{ steps.vars.outputs.productName }}"
+          groupId="${{ steps.vars.outputs.groupId }}"
+          repoName="${{ github.event.repository.name }}"
+          displayName="${{ steps.vars.outputs.displayName }}"
+          inputVersion="${{ github.event.inputs.version }}"
+
+          find . -type f -not -path "./.git/*" -not -path "./.github/*" \
+            -exec sed -i \
+              -e "s|# MY-PRODUCT-NAME|# $displayName|g" \
+              -e "s|\"MY-PRODUCT-NAME\"|\"$repoName\"|g" \
+              -e "s|MY-PRODUCT-NAME|$repoName|g" \
+              -e "s|<version>12.0.0-SNAPSHOT</version>|<version>$inputVersion-SNAPSHOT</version>|g" \
+              -e "s|<project.build.plugin.version>.*</project.build.plugin.version>|<project.build.plugin.version>$inputVersion</project.build.plugin.version>|g" \
+              -e "s|<tester.version>.*</tester.version>|<tester.version>$inputVersion</tester.version>|g" \
+              -e "s|MY-GROUP-ID|$groupId|g" \
+              -e "s|REPO-NAME|${productName}|g" \
+              -e "s|<groupId>com.axonivy.market</groupId>|<groupId>$groupId</groupId>|g" {} +
+
+      - name: Replace placeholders in file and folder names
+        run: |
+          productName="${{ github.event.repository.name }}"
+
+          # Traverse deepest paths first to avoid conflicts
+          find . -depth -name "*MY-PRODUCT-NAME*" \
+            -exec bash -c 'f="{}"; mv "$f" "$(dirname "$f")/$(basename "$f" | sed "s/MY-PRODUCT-NAME/'"$productName"'/g")"' \;
+
+      - name: Commit changes to master and remove initialization workflow
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/initialize-market-extension-publishing.yml || true
+          git add .
+          git commit -m "Initialize new product: ${{ steps.vars.outputs.productName }} v${{ github.event.inputs.version }}" || echo "No changes to commit"
+          git push origin master
