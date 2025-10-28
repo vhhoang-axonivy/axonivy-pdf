@@ -2,14 +2,14 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.axonivy.market</groupId>
-  <artifactId>MY-PRODUCT-NAME-test</artifactId>
-  <version>12.0.0-SNAPSHOT</version>
+  <groupId>com.axonivy.utils.axon ivy pdf</groupId>
+  <artifactId>axonivy-pdf-test</artifactId>
+  <version>13.1.1-SNAPSHOT</version>
   <packaging>iar-integration-test</packaging>
   <properties>
-    <project.build.plugin.version>12.0.0</project.build.plugin.version>
+    <project.build.plugin.version>13.1.1</project.build.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <tester.version>12.0.1</tester.version>
+    <tester.version>13.1.1</tester.version>
   </properties>
   <pluginRepositories>
     <!-- Snapshot releases are available via sonatype.org -->
@@ -32,8 +32,8 @@
   </repositories>
   <dependencies>
     <dependency>
-      <groupId>com.axonivy.market</groupId>
-      <artifactId>MY-PRODUCT-NAME</artifactId>
+      <groupId>com.axonivy.utils.axon ivy pdf</groupId>
+      <artifactId>axonivy-pdf</artifactId>
       <version>${project.version}</version>
       <type>iar</type>
     </dependency>

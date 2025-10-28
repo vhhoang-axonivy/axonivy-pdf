@@ -1,7 +1,7 @@
-# MY-PRODUCT-NAME
+# Axon Ivy PDF Utils
 
-[![CI Build](https://github.com/axonivy-market/REPO-NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/axonivy-market/REPO-NAME/actions/workflows/ci.yml)
+[![CI Build](https://github.com/axonivy-market/Axon Ivy PDF/actions/workflows/ci.yml/badge.svg)](https://github.com/axonivy-market/Axon Ivy PDF/actions/workflows/ci.yml)
 
 "YOUR SHORT DESCRIPTION GOES HERE"
 
-Read our [documentation](MY-PRODUCT-NAME-product/README.md).
+Read our [documentation](axonivy-pdf-product/README.md).
