@@ -39,6 +39,11 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>3.0.6</version>
+    </dependency>
+    <dependency>
       <groupId>com.axonivy.utils.docscommon</groupId>
       <artifactId>axonivy-docs-common</artifactId>
       <version>[1.0.0,)</version>
