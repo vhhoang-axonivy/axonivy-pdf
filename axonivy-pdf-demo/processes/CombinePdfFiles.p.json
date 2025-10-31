@@ -28,7 +28,13 @@
       "type" : "DialogCall",
       "name" : "Combine PDF files",
       "config" : {
-        "dialog" : "com.axonivy.utils.axonivypdf.demo.CombinePdfFiles:start()"
+        "dialog" : "com.axonivy.utils.axonivypdf.demo.CombinePdfFiles:start()",
+        "output" : {
+          "map" : {
+            "out" : "in",
+            "out.fileList" : "result.files"
+          }
+        }
       },
       "visual" : {
         "at" : { "x" : 248, "y" : 64 }

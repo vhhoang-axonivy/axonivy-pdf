@@ -11,6 +11,14 @@
       "name" : "start()",
       "config" : {
         "signature" : "start",
+        "result" : {
+          "params" : [
+            { "name" : "files", "type" : "List<java.io.File>", "desc" : "" }
+          ],
+          "map" : {
+            "result.files" : "in.files"
+          }
+        },
         "guid" : "19A343F7089B3AE2"
       },
       "visual" : {
@@ -33,7 +41,7 @@
         "guid" : "19A343F708B16934"
       },
       "visual" : {
-        "at" : { "x" : 96, "y" : 272 }
+        "at" : { "x" : 96, "y" : 144 }
       },
       "connect" : [
         { "id" : "f5", "to" : "f4" }
@@ -42,49 +50,7 @@
       "id" : "f4",
       "type" : "HtmlDialogExit",
       "visual" : {
-        "at" : { "x" : 224, "y" : 272 }
-      }
-    }, {
-      "id" : "f6",
-      "type" : "HtmlDialogMethodStart",
-      "name" : "uploadFile(FileUploadEvent)",
-      "config" : {
-        "signature" : "method",
-        "guid" : "19A3445FED0D8EB3"
-      },
-      "visual" : {
-        "at" : { "x" : 96, "y" : 176 }
-      },
-      "connect" : [
-        { "id" : "f9", "to" : "f7" }
-      ]
-    }, {
-      "id" : "f7",
-      "type" : "Script",
-      "name" : "Handle uploading files",
-      "config" : {
-        "output" : {
-          "code" : [
-            "// temporary ivy files",
-            "File ivyfile = new File(in.uploadEvent.getFile().getFileName(), true);",
-            "ivyfile.writeBinary(in.uploadEvent.getFile().getContent());",
-            "",
-            "out.files.add(ivyfile.getJavaFile());"
-          ]
-        }
-      },
-      "visual" : {
-        "at" : { "x" : 256, "y" : 177 },
-        "size" : { "width" : 176, "height" : 62 }
-      },
-      "connect" : [
-        { "id" : "f10", "to" : "f8" }
-      ]
-    }, {
-      "id" : "f8",
-      "type" : "HtmlDialogEnd",
-      "visual" : {
-        "at" : { "x" : 416, "y" : 176 }
+        "at" : { "x" : 224, "y" : 144 }
       }
     } ]
 }
