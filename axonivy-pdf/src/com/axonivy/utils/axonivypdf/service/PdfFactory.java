@@ -63,8 +63,43 @@ public class PdfFactory {
 	 * 
 	 * @return a new DocumentConverter instance
 	 */
-	public static DocumentConverter convert() {
+	public static DocumentConverter documentConvert() {
 		return new DocumentConverter();
+	}
+
+	/**
+	 * Creates a new spreadsheet converter for fluent API usage.
+	 * <p>
+	 * This factory method provides the main entry point for spreadsheet conversion
+	 * operations. The returned {@link SpreadsheetConverter} supports a fluent API
+	 * pattern, allowing for intuitive chaining of conversion operations.
+	 * </p>
+	 * 
+	 * <p>
+	 * <strong>Usage Examples:</strong>
+	 * </p>
+	 * 
+	 * <pre>
+	 * // Convert Excel file to PDF as byte array
+	 * byte[] pdfBytes = CellFactory.convert().from(excelFile).toPdf().asBytes();
+	 * 
+	 * // Convert and save to specific file location
+	 * File outputFile = CellFactory.convert().from(inputFile).to(Format.PDF).asFile("/path/to/output.pdf");
+	 * 
+	 * // Convert with custom options
+	 * InputStream result = CellFactory.convert().from(workbook).withOptions(customOptions).toExcel().asStream();
+	 * </pre>
+	 * 
+	 * <p>
+	 * <strong>Note:</strong> The license is automatically managed by this factory,
+	 * so callers don't need to worry about license initialization.
+	 * </p>
+	 * 
+	 * @return a new SpreadsheetConverter instance ready for configuration
+	 * @see SpreadsheetConverter
+	 */
+	public static SpreadsheetConverter spreadsheetConvert() {
+		return new SpreadsheetConverter();
 	}
 
 	/**
