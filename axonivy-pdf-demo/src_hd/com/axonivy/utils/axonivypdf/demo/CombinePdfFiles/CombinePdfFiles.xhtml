@@ -16,7 +16,7 @@
 					multiple="true" label="Select PDF files" />
 
 				<p:commandButton value="Combine and download" ajax="false"
-					actionListener="#{pdfFactoryBean.uploadMultiple}"
+					actionListener="#{pdfFactoryBean.merge}" icon="pi pi-download"
 					styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.mergedFile}" />
 				</p:commandButton>
