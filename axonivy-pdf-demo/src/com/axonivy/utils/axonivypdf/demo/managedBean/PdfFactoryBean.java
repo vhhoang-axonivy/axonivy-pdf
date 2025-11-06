@@ -47,6 +47,7 @@ import ch.ivyteam.ivy.environment.Ivy;
 @ViewScoped
 public class PdfFactoryBean {
 	private static final String PDF_EXTENSION = ".pdf";
+	private static final String ZIP_EXTENSION = ".zip";
 	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
 	private static final String DOT = ".";
 	private UploadedFile uploadedFile;
@@ -60,93 +61,35 @@ public class PdfFactoryBean {
 	private Integer endPage;
 	private DefaultStreamedContent splitFilesZip;
 
-	private List<ResultFile> resultFiles = new ArrayList<>();
-	private List<String> resultFileNames = new ArrayList<>();
-	private List<ByteArrayInputStream> baos = new ArrayList<>();
-
 	@PostConstruct
 	public void init() {
 		PdfFactory.loadLicense();
 	}
 
-	public DefaultStreamedContent getSplitFilesZip() {
-		return splitFilesZip;
-	}
-
-	public void setSplitFilesZip(DefaultStreamedContent splitFilesZip) {
-		this.splitFilesZip = splitFilesZip;
-	}
-
-	public List<DefaultStreamedContent> getDefaultStreamedContents() {
-		return defaultStreamedContents;
-	}
-
-	public void setDefaultStreamedContents(List<DefaultStreamedContent> defaultStreamedContents) {
-		this.defaultStreamedContents = defaultStreamedContents;
-	}
-
-	public List<ByteArrayInputStream> getBaos() {
-		return baos;
-	}
-
-	public void setBaos(List<ByteArrayInputStream> baos) {
-		this.baos = baos;
-	}
-
-	public List<String> getResultFileNames() {
-		return resultFileNames;
-	}
-
-	public void setResultFileNames(List<String> resultFileNames) {
-		this.resultFileNames = resultFileNames;
-	}
-
-	private DefaultStreamedContent resultFiles1;
-
-	public DefaultStreamedContent getResultFiles1() {
-		return resultFiles1;
-	}
-
-	public void setResultFiles1(DefaultStreamedContent resultFiles1) {
-		this.resultFiles1 = resultFiles1;
-	}
-
-//	public DefaultStreamedContent splitsplitAndZipPdf() {
-//		return PdfFactory.get(ABCDE());
-//	}
-
 	public void splitAndDownloadZipPdf() {
-		Ivy.log().info("zipping");
 		if (uploadedFile == null) {
 			return;
 		}
-
-//		PdfFactory.loadLicense();
-
-		// Clean old zip file if any
 		splitFilesZip = null;
 
 		try (InputStream input = uploadedFile.getInputStream()) {
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			String baseName = StringUtils.substringBeforeLast(uploadedFile.getFileName(), DOT);
 
-			// Create temp directory for the split pages
 			Path tempDir = Files.createTempDirectory("split_pages_");
 			int pageCount = 1;
 
 			for (Page pdfPage : pdfDocument.getPages()) {
-
-				Ivy.log().info("page: " + pageCount);
 				com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
 				newDoc.getPages().add(pdfPage);
 
-				Path pageFile = tempDir.resolve("page_" + pageCount + ".pdf");
+				Path pageFile = tempDir.resolve(baseName + "_page_" + pageCount + PDF_EXTENSION);
 				newDoc.save(pageFile.toString());
 				newDoc.close();
 				pageCount++;
 			}
 
-			// Create ZIP file in temp folder
-			Path zipPath = Files.createTempFile("split_pages_", ".zip");
+			Path zipPath = Files.createTempFile("split_pages_", ZIP_EXTENSION);
 			try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
 					ZipOutputStream zos = new ZipOutputStream(fos)) {
 
@@ -168,86 +111,10 @@ public class PdfFactoryBean {
 				});
 			}
 
-			// Prepare downloadable ZIP
-			setSplitFilesZip(DefaultStreamedContent.builder().name("split_pages.zip").contentType("application/zip")
-					.stream(() -> {
-						try {
-							return Files.newInputStream(zipPath);
-						} catch (IOException e) {
-							throw new UncheckedIOException(e);
-						}
-					}).build());
+			setSplitFilesZip(buildFileStream(Files.newInputStream(zipPath).readAllBytes(), "split_pages.zip"));
 			pdfDocument.close();
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-//		return splitFilesZip;
-	}
-
-	public void downloadSplitFile(ResultFile resultFile) {
-		Ivy.log().error("Downloading pdf page");
-		resultFile.setDefaultStreamedContent(buildFileStream(resultFile.getBytes(), resultFile.getName()));
-//		return buildFileStream(resultFile.getBytes(), resultFile.getName() + resultFile.getPageNumber());
-	}
-
-	public void splitPdf() {
-		resultFiles.clear();
-
-		if (uploadedFile == null) {
-			return;
-		}
-
-		try (InputStream input = uploadedFile.getInputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-			int totalPages = pdfDocument.getPages().size();
-
-			if (SplitOption.ALL.equals(splitOption)) {
-				for (int i = 1; i <= totalPages; i++) {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
-					Page page = pdfDocument.getPages().get_Item(i);
-					newDoc.getPages().add(page);
-					newDoc.save(baos);
-					newDoc.close();
-
-					ResultFile rf = new ResultFile();
-					rf.setName("page_" + i + ".pdf");
-					rf.setPageNumber(i);
-//					rf.setDefaultStreamedContent(
-//							DefaultStreamedContent.builder().name(rf.getName()).contentType("application/pdf")
-//									.stream(() -> new ByteArrayInputStream(baos.toByteArray())).build());
-					rf.setBytes(baos.toByteArray());
-
-					resultFileNames.add(rf.getName() + " " + rf.getPageNumber());
-
-					resultFiles.add(rf);
-				}
-
-			}
-//			else if ("RANGE".equals(splitOption)) {
-//				int sp = (startPage != null ? startPage : 1);
-//				int ep = (endPage != null ? endPage : totalPages);
-//				sp = Math.max(sp, 1);
-//				ep = Math.min(ep, totalPages);
-//
-//				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//				Document newDoc = new Document();
-//				for (int i = sp; i <= ep; i++) {
-//					Page page = pdfDocument.getPages().get_Item(i);
-//					newDoc.getPages().add(page);
-//				}
-//				newDoc.save(baos);
-//
-//				ResultFile rf = new ResultFile();
-//				rf.setName("pages_" + sp + "_to_" + ep + ".pdf");
-//				rf.setStreamedContent(DefaultStreamedContent.builder().name(rf.getName()).contentType("application/pdf")
-//						.stream(() -> new ByteArrayInputStream(baos.toByteArray())).build());
-//				resultFiles.add(rf);
-//			}
-			pdfDocument.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-			// handle FacesMessage error
 		}
 	}
 
@@ -421,11 +288,29 @@ public class PdfFactoryBean {
 		this.endPage = endPage;
 	}
 
-	public List<ResultFile> getResultFiles() {
-		return resultFiles;
+	public DefaultStreamedContent getSplitFilesZip() {
+		return splitFilesZip;
 	}
 
-	public void setResultFiles(List<ResultFile> resultFiles) {
-		this.resultFiles = resultFiles;
+	public void setSplitFilesZip(DefaultStreamedContent splitFilesZip) {
+		this.splitFilesZip = splitFilesZip;
+	}
+
+	public List<DefaultStreamedContent> getDefaultStreamedContents() {
+		return defaultStreamedContents;
+	}
+
+	public void setDefaultStreamedContents(List<DefaultStreamedContent> defaultStreamedContents) {
+		this.defaultStreamedContents = defaultStreamedContents;
+	}
+
+	private DefaultStreamedContent resultFiles1;
+
+	public DefaultStreamedContent getResultFiles1() {
+		return resultFiles1;
+	}
+
+	public void setResultFiles1(DefaultStreamedContent resultFiles1) {
+		this.resultFiles1 = resultFiles1;
 	}
 }

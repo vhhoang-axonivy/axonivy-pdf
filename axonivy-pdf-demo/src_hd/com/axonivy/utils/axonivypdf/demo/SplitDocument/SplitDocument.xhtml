@@ -17,90 +17,31 @@
 					label="Upload document" />
 
 				<h4>Select split criteria</h4>
-				<p:selectOneMenu id="select-one" value="#{pdfFactoryBean.splitOption}">
-					<f:selectItem itemValue="ALL"
-						itemLabel="Split into single-page files" />
-					<f:selectItem itemValue="RANGE" itemLabel="Split by page range" />
-					<p:ajax event="change" update="select-one form:rangePanel" />
-				</p:selectOneMenu>
+				<h:panelGroup id="select-one">
+					<p:selectOneMenu value="#{pdfFactoryBean.splitOption}">
+						<f:selectItem itemValue="ALL"
+							itemLabel="Split into single-page files" />
+						<f:selectItem itemValue="RANGE" itemLabel="Split by page range" />
+						<p:ajax event="change" update="@this form:select-one"
+							partialSubmit="true" />
+					</p:selectOneMenu>
 
+					<p:panelGrid id="rangePanel" columns="2"
+						rendered="#{pdfFactoryBean.splitOption == 'RANGE'}">
+						<p:outputLabel for="start" value="Start Page" />
+						<p:inputText id="start" value="#{pdfFactoryBean.startPage}" />
 
-				<p:panelGrid id="rangePanel" columns="2"
-					rendered="#{pdfFactoryBean.splitOption == 'RANGE'}">
-					<p:outputLabel for="start" value="Start Page" />
-					<p:inputText id="start" value="#{pdfFactoryBean.startPage}" />
-
-					<p:outputLabel for="end" value="End Page" />
-					<p:inputText id="end" value="#{pdfFactoryBean.endPage}" />
-				</p:panelGrid>
+						<p:outputLabel for="end" value="End Page" />
+						<p:inputText id="end" value="#{pdfFactoryBean.endPage}" />
+					</p:panelGrid>
+				</h:panelGroup>
 
 				<p:commandButton value="Split and Download" ajax="false"
-					process="@this"
 					actionListener="#{pdfFactoryBean.splitAndDownloadZipPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.splitFilesZip}" />
 				</p:commandButton>
 			</h:form>
-			<!-- 	<h:form id="form" enctype="multipart/form-data">
-				<p:messages id="msgs" showDetail="true" />
-				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
-					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
-					label="Upload PDF" />
-				<h4>Select split criteria</h4>
-				<p:selectOneMenu value="#{pdfFactoryBean.splitOption}">
-					<f:selectItem itemValue="ALL"
-						itemLabel="Split into single-page files" />
-					<f:selectItem itemValue="RANGE" itemLabel="Split by page range" />
-					<p:ajax update="form" />
-				</p:selectOneMenu>
-
-				<p:panelGrid id="rangePanel" columns="2"
-					rendered="#{pdfFactoryBean.splitOption == 'RANGE'}">
-					<p:outputLabel for="start" value="Start Page" />
-					<p:inputText id="start" value="#{pdfFactoryBean.startPage}" />
-
-					<p:outputLabel for="end" value="End Page" />
-					<p:inputText id="end" value="#{pdfFactoryBean.endPage}" />
-				</p:panelGrid>
-
-				<p:commandButton value="Split PDF"
-					actionListener="#{pdfFactoryBean.splitPdf}" ajax="false"
-					styleClass="mt-3 ui-button-outlined block" />
-
-				<p:commandButton value="Split and download"
-					actionListener="#{pdfFactoryBean.splitAndDownloadZipPdf}"
-					ajax="false" styleClass="mt-3 ui-button-outlined block">
-					<p:fileDownload value="#{pdfFactoryBean.splitFilesZip}" />
-				</p:commandButton>
-
-				<c:forEach var="file" items="${pdfFactoryBean.resultFiles}">
-					<p:commandButton value="Convert and Download" ajax="false"
-						actionListener="#{pdfFactoryBean.downloadSplitFile(file)}"
-						icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
-						<p:fileDownload value="#{file.defaultStreamedContent}" />
-					</p:commandButton>
-				</c:forEach>
-
-				<p:dataList value="#{pdfFactoryBean.resultFiles}" var="file"
-					type="unordered">
-					<p:commandButton value="Download #{file.name}" ajax="false"
-						icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
-						<p:fileDownload value="#{pdfFactoryBean.downloadSplitFile(file)}" />
-					</p:commandButton>
-				</p:dataList> -->
-
-			<!-- 				<ui:repeat value="#{pdfFactoryBean.resultFiles}" var="file">
-					<p:commandButton value="Convert and Download" ajax="false"
-						actionListener="#{pdfFactoryBean.downloadSplitFile(file)}"
-						icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
-						<p:fileDownload value="#{file.defaultStreamedContent}" />
-					</p:commandButton>
-										<p:commandLink value="Download #{file.name}" ajax="false">
-						<p:fileDownload value="#{pdfFactoryBean.downloadSplitFile(file)}" />
-					</p:commandLink>
-					<br />
-				</ui:repeat> -->
-			<!-- </h:form> -->
 		</ui:define>
 	</ui:composition>
 </h:body>
