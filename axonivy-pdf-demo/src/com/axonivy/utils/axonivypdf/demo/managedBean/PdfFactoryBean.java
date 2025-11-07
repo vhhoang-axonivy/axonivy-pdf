@@ -70,9 +70,6 @@ public class PdfFactoryBean {
 	public void onSplitOptionChange() {
 		if (SplitOption.RANGE.equals(splitOption)) {
 			initPageRange();
-		} else {
-			setStartPage(0);
-			setEndPage(0);
 		}
 	}
 
