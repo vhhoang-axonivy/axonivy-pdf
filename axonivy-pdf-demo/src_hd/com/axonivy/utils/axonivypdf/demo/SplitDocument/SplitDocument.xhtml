@@ -15,31 +15,37 @@
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
 					label="Upload document" />
-
 				<h4>Select split criteria</h4>
 				<h:panelGroup id="select-one">
 					<p:selectOneMenu value="#{pdfFactoryBean.splitOption}">
 						<f:selectItem itemValue="ALL"
 							itemLabel="Split into single-page files" />
 						<f:selectItem itemValue="RANGE" itemLabel="Split by page range" />
-						<p:ajax event="change" update="@this form:select-one"
+						<p:ajax listener="#{pdfFactoryBean.onSplitOptionChange}"
+							process="form" update="@this form:select-one form:range-panel"
 							partialSubmit="true" />
 					</p:selectOneMenu>
 
 					<p:panelGrid id="rangePanel" columns="2"
 						rendered="#{pdfFactoryBean.splitOption == 'RANGE'}">
-						<p:outputLabel for="start" value="Start Page" />
-						<p:inputText id="start" value="#{pdfFactoryBean.startPage}" />
-
-						<p:outputLabel for="end" value="End Page" />
-						<p:inputText id="end" value="#{pdfFactoryBean.endPage}" />
 					</p:panelGrid>
 				</h:panelGroup>
+				<p:panelGrid id="range-panel" columns="2"
+					style="display: #{pdfFactoryBean.splitOption eq 'RANGE' ? 'block' : 'none'}">
+					<p:outputLabel for="start" value="Start Page" />
+					<p:inputText type="number" id="start"
+						value="#{pdfFactoryBean.startPage}">
+					</p:inputText>
+
+					<p:outputLabel for="end" value="End Page" />
+					<p:inputText type="number" id="end"
+						value="#{pdfFactoryBean.endPage}" />
+				</p:panelGrid>
 
 				<p:commandButton value="Split and Download" ajax="false"
 					actionListener="#{pdfFactoryBean.splitAndDownloadZipPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
-					<p:fileDownload value="#{pdfFactoryBean.splitFilesZip}" />
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 			</h:form>
 		</ui:define>
