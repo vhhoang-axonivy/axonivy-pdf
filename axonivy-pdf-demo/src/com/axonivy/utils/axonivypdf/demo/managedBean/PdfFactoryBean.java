@@ -46,19 +46,20 @@ import com.axonivy.utils.axonivypdf.service.PdfFactory;
 @ManagedBean
 @ViewScoped
 public class PdfFactoryBean {
-	private static final String PDF_EXTENSION = ".pdf";
 	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
-	private static final String ZIP_EXTENSION = ".zip";
 	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
-	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d" + PDF_EXTENSION;
+	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d" + FileExtension.PDF.getExtension();
+	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
+	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
+	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
+	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
+	private static final String PDF_CONTENT_TYPE = "application/pdf";
+	private static final double WATERMARK_OPACITY = 0.3;
 	private static final String DOT = ".";
 	private SplitOption splitOption = SplitOption.ALL;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
-	private DefaultStreamedContent mergedFile;
-	private DefaultStreamedContent convertedPdfFile;
 	private DefaultStreamedContent fileForDownload;
-	private DefaultStreamedContent splitFilesZip;
 	private Integer startPage;
 	private Integer endPage;
 
@@ -89,57 +90,16 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void splitFileByRange(int pageSize, com.aspose.pdf.Document pdfDocument) {
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
-		int sp = (startPage == null) ? 1 : Math.max(1, startPage);
-		int ep = (endPage == null) ? pageSize : Math.min(pageSize, endPage);
-		if (sp > ep) {
-			return;
-		}
-		com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
-		for (int i = sp; i <= ep; i++) {
-			newDoc.getPages().add(pdfDocument.getPages().get_Item(i));
-			newDoc.save(output);
-		}
-		newDoc.close();
-		setFileForDownload(buildFileStream(output.toByteArray(), "split_pages.zip"));
-	}
-
-	public void splitFileByRange(InputStream input) {
-		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-			int pageSize = pdfDocument.getPages().size();
-			int sp = (startPage == null) ? 1 : Math.max(1, startPage);
-			int ep = (endPage == null) ? pageSize : Math.min(pageSize, endPage);
-			if (sp > ep) {
-				pdfDocument.close();
-				return;
-			}
-			com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
-			for (int i = sp; i <= ep; i++) {
-
-				newDoc.getPages().add(pdfDocument.getPages().get_Item(i));
-				newDoc.save(output);
-				newDoc.close();
-			}
-			pdfDocument.close();
-			setFileForDownload(buildFileStream(output.toByteArray(), "split_pages.zip"));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void splitAndDownloadZipPdf() {
 		if (uploadedFile == null) {
 			return;
 		}
-		String baseName = StringUtils.substringBeforeLast(uploadedFile.getFileName(), DOT);
+		String originalName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream()) {
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
 			if (SplitOption.ALL.equals(splitOption)) {
-				splitFilesZip = null;
 				Path tempDir = Files.createTempDirectory("split_pages_");
 				int pageCount = 1;
 
@@ -147,35 +107,15 @@ public class PdfFactoryBean {
 					com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
 					newDoc.getPages().add(pdfPage);
 
-//					Path pageFile = tempDir.resolve(baseName + "_page_" + pageCount + PDF_EXTENSION);
-					Path pageFile = tempDir.resolve(String.format(SPLIT_PAGE_NAME_PATTERN, baseName, pageCount));
+					Path pageFile = tempDir.resolve(String.format(SPLIT_PAGE_NAME_PATTERN,
+							StringUtils.substringBeforeLast(originalName, DOT), pageCount));
 					newDoc.save(pageFile.toString());
 					newDoc.close();
 					pageCount++;
 				}
-
-				Path zipPath = Files.createTempFile("split_pages_", ZIP_EXTENSION);
-				try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
-						ZipOutputStream zos = new ZipOutputStream(fos)) {
-
-					Files.list(tempDir).forEach(path -> {
-						try (InputStream fis = Files.newInputStream(path)) {
-							ZipEntry zipEntry = new ZipEntry(path.getFileName().toString());
-							zos.putNextEntry(zipEntry);
-
-							byte[] buffer = new byte[1024];
-							int length;
-							while ((length = fis.read(buffer)) > 0) {
-								zos.write(buffer, 0, length);
-							}
-
-							zos.closeEntry();
-						} catch (IOException e) {
-							throw new UncheckedIOException(e);
-						}
-					});
-				}
-				setFileForDownload(buildFileStream(Files.newInputStream(zipPath).readAllBytes(), "split_pages.zip"));
+				setFileForDownload(
+						buildFileStream(Files.newInputStream(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)).readAllBytes(),
+								updateFileWithZipExtension(originalName)));
 			} else {
 				int pageSize = pdfDocument.getPages().size();
 				if (isInputInvalid(getStartPage(), getEndPage(), pageSize)) {
@@ -191,7 +131,8 @@ public class PdfFactoryBean {
 					}
 					newDoc.save(output);
 					newDoc.close();
-					setFileForDownload(buildFileStream(output.toByteArray(), "converted.pdf"));
+					setFileForDownload(buildFileStream(output.toByteArray(),
+							updateRangeSplitFileWithZipExtension(originalName, getStartPage(), getEndPage())));
 
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -204,22 +145,29 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
-		boolean isInvalid = false;
+	private Path zipDirectory(Path directory, String prefix) throws IOException {
+		Path zipPath = Files.createTempFile(prefix, FileExtension.ZIP.getExtension());
 
-		if (startPage < 0 || endPage < 0) {
-			isInvalid = true;
+		try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+				ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+			Files.list(directory).forEach(path -> {
+				try (InputStream fis = Files.newInputStream(path)) {
+					ZipEntry zipEntry = new ZipEntry(path.getFileName().toString());
+					zos.putNextEntry(zipEntry);
+
+					byte[] buffer = new byte[1024];
+					int length;
+					while ((length = fis.read(buffer)) > 0) {
+						zos.write(buffer, 0, length);
+					}
+					zos.closeEntry();
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			});
 		}
-
-		if (startPage > endPage) {
-			isInvalid = true;
-		}
-
-		if (endPage > originalDocPageSize || startPage > originalDocPageSize) {
-			isInvalid = true;
-		}
-
-		return isInvalid;
+		return zipPath;
 	}
 
 	public void convertImageToPdf() {
@@ -229,6 +177,7 @@ public class PdfFactoryBean {
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			String originalName = uploadedFile.getFileName();
 			Document doc = new Document();
 			DocumentBuilder builder = new DocumentBuilder(doc);
 
@@ -244,7 +193,7 @@ public class PdfFactoryBean {
 			ps.setPageHeight(image.getHeight());
 
 			doc.save(output, SaveFormat.PDF);
-			setConvertedPdfFile(buildFileStream(output.toByteArray(), "converted.pdf"));
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalName)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -264,15 +213,11 @@ public class PdfFactoryBean {
 			}
 
 			PdfFileEditor editor = new PdfFileEditor();
-
 			boolean result = editor.concatenate(inputStreams, output);
 			if (!result) {
 				return;
 			}
-
-			byte[] mergedBytes = output.toByteArray();
-			setMergedFile(DefaultStreamedContent.builder().name("merged.pdf").contentType("application/pdf")
-					.stream(() -> new ByteArrayInputStream(mergedBytes)).build());
+			setFileForDownload(buildFileStream(output.toByteArray(), MERGED_DOCUMENT_NAME));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -315,7 +260,8 @@ public class PdfFactoryBean {
 			} else {
 				throw new IllegalArgumentException("Unsupported file type: " + fileName);
 			}
-			setConvertedPdfFile(buildFileStream(output.toByteArray(), "converted.pdf"));
+			setFileForDownload(
+					buildFileStream(output.toByteArray(), updateFileWithPdfExtension(uploadedFile.getFileName())));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -339,7 +285,7 @@ public class PdfFactoryBean {
 			stamp.getTextState().setFontSize(40);
 			stamp.getTextState().setFontStyle(FontStyles.Bold);
 			stamp.getTextState().setForegroundColor(Color.getLightGray());
-			stamp.setOpacity(0.3);
+			stamp.setOpacity(WATERMARK_OPACITY);
 
 			for (Page page : pdfDocument.getPages()) {
 				page.addStamp(stamp);
@@ -353,15 +299,47 @@ public class PdfFactoryBean {
 		}
 	}
 
-//	private String updateFileWithPdfExtension(String orginalFileName) {
-//		String baseName = StringUtils.isNotBlank(orginalFileName)
-//				? StringUtils.substringBeforeLast(orginalFileName, DOT)
-//				: "workbook";
-//		return baseName + PDF_EXTENSION;
-//	}
+	private String updateFileWithPdfExtension(String originalFileName) {
+		String baseName = StringUtils.isNotBlank(originalFileName)
+				? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: "PDF";
+		return baseName + FileExtension.PDF.getExtension();
+	}
+
+	private String updateFileWithZipExtension(String originalFileName) {
+		String baseName = StringUtils.isNotBlank(originalFileName)
+				? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: "zipped";
+		return String.format(SPLIT_PAGE_ZIP_NAME_PATTERN, baseName);
+	}
+
+	private String updateRangeSplitFileWithZipExtension(String originalFileName, int startPage, int endPage) {
+		String baseName = StringUtils.isNotBlank(originalFileName)
+				? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: "split_zipped";
+		return String.format(RANGE_SPLIT_FILE_NAME_PATTERN, baseName, startPage, endPage);
+	}
+
+	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
+		boolean isInvalid = false;
+
+		if (startPage < 0 || endPage < 0) {
+			isInvalid = true;
+		}
+
+		if (startPage > endPage) {
+			isInvalid = true;
+		}
+
+		if (endPage > originalDocPageSize || startPage > originalDocPageSize) {
+			isInvalid = true;
+		}
+
+		return isInvalid;
+	}
 
 	private DefaultStreamedContent buildFileStream(byte[] byteContent, String fileName) {
-		return DefaultStreamedContent.builder().name(fileName).contentType("application/pdf")
+		return DefaultStreamedContent.builder().name(fileName).contentType(PDF_CONTENT_TYPE)
 				.stream(() -> new ByteArrayInputStream(byteContent)).build();
 	}
 
@@ -379,22 +357,6 @@ public class PdfFactoryBean {
 
 	public void setUploadedFiles(UploadedFiles uploadedFiles) {
 		this.uploadedFiles = uploadedFiles;
-	}
-
-	public void setMergedFile(DefaultStreamedContent mergedFile) {
-		this.mergedFile = mergedFile;
-	}
-
-	public DefaultStreamedContent getMergedFile() {
-		return mergedFile;
-	}
-
-	public DefaultStreamedContent getConvertedPdfFile() {
-		return convertedPdfFile;
-	}
-
-	public void setConvertedPdfFile(DefaultStreamedContent convertedPdfFile) {
-		this.convertedPdfFile = convertedPdfFile;
 	}
 
 	public SplitOption getSplitOption() {
@@ -419,14 +381,6 @@ public class PdfFactoryBean {
 
 	public void setEndPage(Integer endPage) {
 		this.endPage = endPage;
-	}
-
-	public DefaultStreamedContent getSplitFilesZip() {
-		return splitFilesZip;
-	}
-
-	public void setSplitFilesZip(DefaultStreamedContent splitFilesZip) {
-		this.splitFilesZip = splitFilesZip;
 	}
 
 	public DefaultStreamedContent getFileForDownload() {

@@ -2,7 +2,7 @@ package com.axonivy.utils.axonivypdf.demo.enums;
 
 public enum FileExtension {
 	DOC(".doc"), DOCX(".docx"), ODT(".odt"), TXT(".txt"), MD(".md"), XLS(".xls"), XLSX(".xlsx"), HTML(".html"),
-	PDF(".pdf");
+	PDF(".pdf"), ZIP(".zip");
 
 	private final String extension;
 

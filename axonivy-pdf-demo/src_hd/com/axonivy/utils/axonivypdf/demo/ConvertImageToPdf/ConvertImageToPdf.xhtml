@@ -19,7 +19,7 @@
 				<p:commandButton value="Convert and Download" ajax="false"
 					actionListener="#{pdfFactoryBean.convertImageToPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
-					<p:fileDownload value="#{pdfFactoryBean.convertedPdfFile}" />
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 			</h:form>
 		</ui:define>

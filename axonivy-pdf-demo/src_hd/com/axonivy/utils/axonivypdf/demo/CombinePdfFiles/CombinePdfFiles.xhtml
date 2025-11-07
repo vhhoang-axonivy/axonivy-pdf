@@ -18,7 +18,7 @@
 				<p:commandButton value="Combine and download" ajax="false"
 					actionListener="#{pdfFactoryBean.merge}" icon="pi pi-download"
 					styleClass="mt-3 ui-button-outlined block">
-					<p:fileDownload value="#{pdfFactoryBean.mergedFile}" />
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 			</h:form>
 		</ui:define>
