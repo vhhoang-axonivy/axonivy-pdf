@@ -54,8 +54,8 @@ public class PdfFactoryBean {
 	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
 	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
 	private static final String PDF_CONTENT_TYPE = "application/pdf";
-	private static final double WATERMARK_OPACITY = 0.3;
 	private static final String DOT = ".";
+	private static final double WATERMARK_OPACITY = 0.3;
 	private SplitOption splitOption = SplitOption.ALL;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
@@ -100,7 +100,7 @@ public class PdfFactoryBean {
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
 			if (SplitOption.ALL.equals(splitOption)) {
-				Path tempDir = Files.createTempDirectory("split_pages_");
+				Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
 				int pageCount = 1;
 
 				for (Page pdfPage : pdfDocument.getPages()) {
@@ -113,35 +113,36 @@ public class PdfFactoryBean {
 					newDoc.close();
 					pageCount++;
 				}
-				setFileForDownload(
-						buildFileStream(Files.newInputStream(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)).readAllBytes(),
-								updateFileWithZipExtension(originalName)));
+				setFileForDownload(buildFileStream(Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)),
+						updateFileWithZipExtension(originalName)));
 			} else {
-				int pageSize = pdfDocument.getPages().size();
-				if (isInputInvalid(getStartPage(), getEndPage(), pageSize)) {
-					pdfDocument.close();
-					return;
-				}
-
-				try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-					com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
-					for (int i = getStartPage(); i <= getEndPage(); i++) {
-						Page pdfPage = pdfDocument.getPages().get_Item(i);
-						newDoc.getPages().add(pdfPage);
-					}
-					newDoc.save(output);
-					newDoc.close();
-					setFileForDownload(buildFileStream(output.toByteArray(),
-							updateRangeSplitFileWithZipExtension(originalName, getStartPage(), getEndPage())));
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				handleSplitByRange(pdfDocument, originalName);
 			}
 			pdfDocument.close();
 
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalName) throws IOException {
+		int pageSize = pdfDocument.getPages().size();
+		if (isInputInvalid(getStartPage(), getEndPage(), pageSize)) {
+			return;
+		}
+
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
+
+			for (int i = getStartPage(); i <= getEndPage(); i++) {
+				Page pdfPage = pdfDocument.getPages().get_Item(i);
+				newDoc.getPages().add(pdfPage);
+			}
+
+			newDoc.save(output);
+			newDoc.close();
+			setFileForDownload(buildFileStream(output.toByteArray(),
+					updateRangeSplitFileWithZipExtension(originalName, getStartPage(), getEndPage())));
 		}
 	}
 
