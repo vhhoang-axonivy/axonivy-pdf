@@ -15,7 +15,7 @@
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
 					label="Choose PDF" />
 
-				<p:commandButton value="Convert and Download" ajax="false"
+				<p:commandButton value="Extract images and Download" ajax="false"
 					actionListener="#{pdfFactoryBean.extractImagesFromPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
