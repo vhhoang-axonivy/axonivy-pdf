@@ -1,0 +1,41 @@
+{
+  "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
+  "id" : "19A6B3E2C8420E30",
+  "config" : {
+    "data" : "com.axonivy.utils.axonivypdf.demo.ConvertPdfToOtherDocumentTypesData"
+  },
+  "elements" : [ {
+      "id" : "f0",
+      "type" : "RequestStart",
+      "name" : "start",
+      "config" : {
+        "signature" : "start"
+      },
+      "visual" : {
+        "at" : { "x" : 96, "y" : 64 }
+      },
+      "connect" : [
+        { "id" : "f2", "to" : "f3" }
+      ]
+    }, {
+      "id" : "f1",
+      "type" : "TaskEnd",
+      "visual" : {
+        "at" : { "x" : 472, "y" : 64 }
+      }
+    }, {
+      "id" : "f3",
+      "type" : "DialogCall",
+      "name" : "Convert PDF to other document types",
+      "config" : {
+        "dialog" : "com.axonivy.utils.axonivypdf.demo.ConvertPdfToOtherDocumentTypes:start()"
+      },
+      "visual" : {
+        "at" : { "x" : 280, "y" : 61 },
+        "size" : { "width" : 176, "height" : 54 }
+      },
+      "connect" : [
+        { "id" : "f4", "to" : "f1", "color" : "default" }
+      ]
+    } ]
+}

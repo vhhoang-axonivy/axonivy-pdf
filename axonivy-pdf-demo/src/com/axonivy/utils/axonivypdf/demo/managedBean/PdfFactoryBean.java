@@ -9,6 +9,8 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -31,6 +33,7 @@ import com.aspose.pdf.Rotation;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
+import com.aspose.pdf.devices.JpegDevice;
 import com.aspose.pdf.facades.PdfFileEditor;
 import com.aspose.words.Document;
 import com.aspose.words.DocumentBuilder;
@@ -43,25 +46,33 @@ import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
 
+import ch.ivyteam.ivy.environment.Ivy;
+
 @ManagedBean
 @ViewScoped
 public class PdfFactoryBean {
-	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
-	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
-	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d" + FileExtension.PDF.getExtension();
-	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
-	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
-	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
+	private static final String DOT = ".";
+	private static final float DEFAULT_FONT_SIZE = 12;
+	private static final double WATERMARK_OPACITY = 0.3;
+	private static final float DEFAULT_WATERMARK_FONT_SIZE = 40;
 	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
 	private static final String PDF_CONTENT_TYPE = "application/pdf";
-	private static final String DOT = ".";
-	private static final double WATERMARK_OPACITY = 0.3;
+	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
+	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
+	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d";
+	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
+	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_images_zipped" + FileExtension.ZIP.getExtension();
+	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
+	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
 	private DefaultStreamedContent fileForDownload;
 	private Integer startPage;
 	private Integer endPage;
+	private List<FileExtension> otherDocumentTypes = Arrays.asList(FileExtension.DOCX, FileExtension.XLSX,
+			FileExtension.PPTX, FileExtension.JPG, FileExtension.JPEG);
+	private FileExtension selectedFileExtension = FileExtension.DOCX;
 
 	@PostConstruct
 	public void init() {
@@ -90,6 +101,60 @@ public class PdfFactoryBean {
 		}
 	}
 
+	public void convertPdfToImagesZip(com.aspose.pdf.Document pdfDocument, String originalFileName, String extention)
+			throws IOException {
+		Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
+
+		int pageCount = 1;
+		for (Page pdfPage : pdfDocument.getPages()) {
+			JpegDevice jpegDevice = new JpegDevice();
+
+			try (ByteArrayOutputStream imageStream = new ByteArrayOutputStream()) {
+				jpegDevice.process(pdfPage, imageStream);
+
+				Path imageFile = tempDir.resolve(String.format(SPLIT_PAGE_NAME_PATTERN + extention,
+						StringUtils.substringBeforeLast(originalFileName, DOT), pageCount));
+				Files.write(imageFile, imageStream.toByteArray());
+			}
+
+			pageCount++;
+		}
+		byte[] zipBytes = Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME));
+		setFileForDownload(buildFileStream(zipBytes, updateImageZipName(originalFileName)));
+		pdfDocument.close();
+	}
+
+	public void convertPdfToOtherDocumentTypes() {
+		if (uploadedFile == null) {
+			return;
+		}
+
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			String orginalFileName = uploadedFile.getFileName();
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			if (FileExtension.DOCX == getSelectedFileExtension()) {
+				pdfDocument.save(output, com.aspose.pdf.SaveFormat.DocX);
+			} else if (FileExtension.XLSX == getSelectedFileExtension()) {
+				pdfDocument.save(output, com.aspose.pdf.SaveFormat.Excel);
+			} else if (FileExtension.PPTX == getSelectedFileExtension()) {
+				pdfDocument.save(output, com.aspose.pdf.SaveFormat.Pptx);
+			} else if (FileExtension.JPG == getSelectedFileExtension()) {
+				convertPdfToImagesZip(pdfDocument, orginalFileName, FileExtension.JPG.getExtension());
+				return;
+			} else if (FileExtension.JPEG == getSelectedFileExtension()) {
+				convertPdfToImagesZip(pdfDocument, orginalFileName, FileExtension.JPEG.getExtension());
+				return;
+			}
+			pdfDocument.close();
+			setFileForDownload(buildFileStream(output.toByteArray(),
+					updateFileWithNewExtension(orginalFileName, getSelectedFileExtension())));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void splitAndDownloadZipPdf() {
 		if (uploadedFile == null) {
 			return;
@@ -107,8 +172,9 @@ public class PdfFactoryBean {
 					com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
 					newDoc.getPages().add(pdfPage);
 
-					Path pageFile = tempDir.resolve(String.format(SPLIT_PAGE_NAME_PATTERN,
-							StringUtils.substringBeforeLast(originalName, DOT), pageCount));
+					Path pageFile = tempDir
+							.resolve(String.format(SPLIT_PAGE_NAME_PATTERN + FileExtension.PDF.getExtension(),
+									StringUtils.substringBeforeLast(originalName, DOT), pageCount));
 					newDoc.save(pageFile.toString());
 					newDoc.close();
 					pageCount++;
@@ -249,7 +315,7 @@ public class PdfFactoryBean {
 				com.aspose.pdf.Document pdfDoc = new com.aspose.pdf.Document();
 				Page page = pdfDoc.getPages().add();
 				TextFragment text = new TextFragment(html);
-				text.getTextState().setFontSize(12);
+				text.getTextState().setFontSize(DEFAULT_FONT_SIZE);
 				text.getTextState().setFont(FontRepository.findFont(TIMES_NEW_ROMAN_FONT));
 				page.getParagraphs().add(text);
 				pdfDoc.save(output);
@@ -283,7 +349,7 @@ public class PdfFactoryBean {
 			stamp.setVerticalAlignment(VerticalAlignment.Center);
 			stamp.setRotate(Rotation.None);
 			stamp.getTextState().setFont(FontRepository.findFont(TIMES_NEW_ROMAN_FONT));
-			stamp.getTextState().setFontSize(40);
+			stamp.getTextState().setFontSize(DEFAULT_WATERMARK_FONT_SIZE);
 			stamp.getTextState().setFontStyle(FontStyles.Bold);
 			stamp.getTextState().setForegroundColor(Color.getLightGray());
 			stamp.setOpacity(WATERMARK_OPACITY);
@@ -319,6 +385,20 @@ public class PdfFactoryBean {
 				? StringUtils.substringBeforeLast(originalFileName, DOT)
 				: "split_zipped";
 		return String.format(RANGE_SPLIT_FILE_NAME_PATTERN, baseName, startPage, endPage);
+	}
+
+	private String updateImageZipName(String originalFileName) {
+		String baseName = StringUtils.isNotBlank(originalFileName)
+				? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: "converted";
+		return String.format(IMAGE_ZIP_NAME_PATTERN, baseName);
+	}
+
+	private String updateFileWithNewExtension(String originalFileName, FileExtension fileExtension) {
+		String baseName = StringUtils.isNotBlank(originalFileName)
+				? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: "converted";
+		return baseName + fileExtension.getExtension();
 	}
 
 	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
@@ -390,5 +470,21 @@ public class PdfFactoryBean {
 
 	public void setFileForDownload(DefaultStreamedContent fileForDownload) {
 		this.fileForDownload = fileForDownload;
+	}
+
+	public List<FileExtension> getOtherDocumentTypes() {
+		return otherDocumentTypes;
+	}
+
+	public void setOtherDocumentTypes(List<FileExtension> otherDocumentTypes) {
+		this.otherDocumentTypes = otherDocumentTypes;
+	}
+
+	public FileExtension getSelectedFileExtension() {
+		return selectedFileExtension;
+	}
+
+	public void setSelectedFileExtension(FileExtension selectedFileExtension) {
+		this.selectedFileExtension = selectedFileExtension;
 	}
 }
