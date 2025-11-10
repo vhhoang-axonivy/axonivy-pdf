@@ -74,6 +74,8 @@ public class PdfFactoryBean {
 	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_images_zipped" + FileExtension.ZIP.getExtension();
 	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
 	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
+	private static final String FILE_NAME_WITH_WATERMARK_PATTERN = "%s_with_watermark"
+			+ FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
 	private TextExtractedType textExtractedType = TextExtractedType.ALL;
 	private UploadedFile uploadedFile;
@@ -112,88 +114,66 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void extractHighlightedText() {
-		Ivy.log().error("Extracted type: " + getTextExtractedType());
-		if (uploadedFile == null) {
-			return;
-		}
+	public void extractHighlightedText(String originalFileName, InputStream input, ByteArrayOutputStream textStream,
+			OutputStreamWriter writer) throws IOException {
+		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
-		String originalName = uploadedFile.getFileName();
+		StringBuilder highlightedText = new StringBuilder();
 
-		try (InputStream input = uploadedFile.getInputStream();
-				ByteArrayOutputStream textStream = new ByteArrayOutputStream();
-				OutputStreamWriter writer = new OutputStreamWriter(textStream, StandardCharsets.UTF_8)) {
+		for (Page page : pdfDocument.getPages()) {
+			for (Annotation annotation : page.getAnnotations()) {
+				if (annotation instanceof HighlightAnnotation) {
+					HighlightAnnotation highlight = (HighlightAnnotation) annotation;
 
-			// Load the PDF document
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-
-			StringBuilder highlightedText = new StringBuilder();
-
-			// Loop through all pages
-			for (Page page : pdfDocument.getPages()) {
-				for (Annotation annotation : page.getAnnotations()) {
-					// Filter only HighlightAnnotation
-					if (annotation instanceof HighlightAnnotation) {
-						HighlightAnnotation highlight = (HighlightAnnotation) annotation;
-
-						// Get all marked text fragments
-						TextFragmentCollection fragments = highlight.getMarkedTextFragments();
-						for (TextFragment tf : fragments) {
-							highlightedText.append(tf.getText()).append(System.lineSeparator());
-						}
+					TextFragmentCollection fragments = highlight.getMarkedTextFragments();
+					for (TextFragment tf : fragments) {
+						highlightedText.append(tf.getText()).append(System.lineSeparator());
 					}
 				}
 			}
-
-			// Write all highlighted text to stream
-			writer.write(highlightedText.toString());
-			writer.flush();
-
-			// Close PDF
-			pdfDocument.close();
-
-			// Prepare file for download
-			setFileForDownload(
-					buildFileStream(textStream.toByteArray(), replaceFileExtension(originalName, "_highlighted.txt")));
-
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
+
+		writer.write(highlightedText.toString());
+		writer.flush();
+
+		pdfDocument.close();
+
+		setFileForDownload(
+				buildFileStream(textStream.toByteArray(), replaceFileExtension(originalFileName, "_highlighted.txt")));
+	}
+
+	public void extractAllText(String originalFileName, InputStream input, ByteArrayOutputStream textStream,
+			OutputStreamWriter writer) throws IOException {
+		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+		com.aspose.pdf.TextAbsorber textAbsorber = new com.aspose.pdf.TextAbsorber();
+
+		pdfDocument.getPages().accept(textAbsorber);
+
+		String extractedText = textAbsorber.getText();
+
+		writer.write(extractedText);
+		writer.flush();
+
+		pdfDocument.close();
+
+		setFileForDownload(buildFileStream(textStream.toByteArray(), replaceFileExtension(originalFileName, ".txt")));
 	}
 
 	public void extractTextFromPdf() {
 		if (uploadedFile == null) {
-			return; // No file uploaded
+			return;
 		}
 
-		String originalName = uploadedFile.getFileName();
+		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream textStream = new ByteArrayOutputStream();
 				OutputStreamWriter writer = new OutputStreamWriter(textStream, StandardCharsets.UTF_8)) {
-
-			// Load the uploaded PDF
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-
-			// Create a TextAbsorber to extract text from all pages
-			com.aspose.pdf.TextAbsorber textAbsorber = new com.aspose.pdf.TextAbsorber();
-
-			// Accept the absorber for all pages
-			pdfDocument.getPages().accept(textAbsorber);
-
-			// Get extracted text
-			String extractedText = textAbsorber.getText();
-
-			// Write extracted text into the stream
-			writer.write(extractedText);
-			writer.flush();
-
-			// Close PDF document
-			pdfDocument.close();
-
-			// Prepare the file for download (your existing JSF utility)
-			setFileForDownload(buildFileStream(textStream.toByteArray(), replaceFileExtension(originalName, ".txt")));
-
+			if (TextExtractedType.ALL.equals(textExtractedType)) {
+				extractAllText(originalFileName, input, textStream, writer);
+			} else {
+				extractHighlightedText(originalFileName, input, textStream, writer);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -213,7 +193,7 @@ public class PdfFactoryBean {
 		}
 
 		try (InputStream input = uploadedFile.getInputStream();) {
-			String originalName = uploadedFile.getFileName();
+			String originalFileName = uploadedFile.getFileName();
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 			Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
 			int imageCount = 1;
@@ -229,7 +209,7 @@ public class PdfFactoryBean {
 					try (ByteArrayOutputStream imageStream = new ByteArrayOutputStream()) {
 						image.save(imageStream, ImageFormat.Png);
 						Path imageFile = tempDir.resolve(String.format(IMAGE_NAME_PATTERN,
-								StringUtils.substringBeforeLast(originalName, DOT), pageCount, imageCount));
+								StringUtils.substringBeforeLast(originalFileName, DOT), pageCount, imageCount));
 						Files.write(imageFile, imageStream.toByteArray());
 						imageCount++;
 					}
@@ -238,7 +218,7 @@ public class PdfFactoryBean {
 			}
 
 			byte[] zipBytes = Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME));
-			setFileForDownload(buildFileStream(zipBytes, updateImageZipName(originalName)));
+			setFileForDownload(buildFileStream(zipBytes, updateImageZipName(originalFileName)));
 
 			pdfDocument.close();
 		} catch (Exception e) {
@@ -304,7 +284,7 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
-		String originalName = uploadedFile.getFileName();
+		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream()) {
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
@@ -319,15 +299,15 @@ public class PdfFactoryBean {
 
 					Path pageFile = tempDir
 							.resolve(String.format(SPLIT_PAGE_NAME_PATTERN + FileExtension.PDF.getExtension(),
-									StringUtils.substringBeforeLast(originalName, DOT), pageCount));
+									StringUtils.substringBeforeLast(originalFileName, DOT), pageCount));
 					newDoc.save(pageFile.toString());
 					newDoc.close();
 					pageCount++;
 				}
 				setFileForDownload(buildFileStream(Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)),
-						updateFileWithZipExtension(originalName)));
+						updateFileWithZipExtension(originalFileName)));
 			} else {
-				handleSplitByRange(pdfDocument, originalName);
+				handleSplitByRange(pdfDocument, originalFileName);
 			}
 			pdfDocument.close();
 
@@ -336,7 +316,7 @@ public class PdfFactoryBean {
 		}
 	}
 
-	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalName) throws IOException {
+	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalFileName) throws IOException {
 		int pageSize = pdfDocument.getPages().size();
 		if (isInputInvalid(getStartPage(), getEndPage(), pageSize)) {
 			return;
@@ -353,7 +333,7 @@ public class PdfFactoryBean {
 			newDoc.save(output);
 			newDoc.close();
 			setFileForDownload(buildFileStream(output.toByteArray(),
-					updateRangeSplitFileWithZipExtension(originalName, getStartPage(), getEndPage())));
+					updateRangeSplitFileWithZipExtension(originalFileName, getStartPage(), getEndPage())));
 		}
 	}
 
@@ -389,7 +369,7 @@ public class PdfFactoryBean {
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			String originalName = uploadedFile.getFileName();
+			String originalFileName = uploadedFile.getFileName();
 			Document doc = new Document();
 			DocumentBuilder builder = new DocumentBuilder(doc);
 
@@ -405,7 +385,7 @@ public class PdfFactoryBean {
 			ps.setPageHeight(image.getHeight());
 
 			doc.save(output, SaveFormat.PDF);
-			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalName)));
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalFileName)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -439,6 +419,7 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
+		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -472,8 +453,7 @@ public class PdfFactoryBean {
 			} else {
 				throw new IllegalArgumentException("Unsupported file type: " + fileName);
 			}
-			setFileForDownload(
-					buildFileStream(output.toByteArray(), updateFileWithPdfExtension(uploadedFile.getFileName())));
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalFileName)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -483,6 +463,7 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
+		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream inputStream = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -504,46 +485,41 @@ public class PdfFactoryBean {
 			}
 			pdfDocument.save(output);
 			pdfDocument.close();
-			setFileForDownload(buildFileStream(output.toByteArray(), "converted.pdf"));
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileNameWithWatermark(originalFileName)));
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
+	private String getBaseName(String originalFileName, String substitudeName) {
+		return StringUtils.isNotBlank(originalFileName) ? StringUtils.substringBeforeLast(originalFileName, DOT)
+				: substitudeName;
+	}
+
 	private String updateFileWithPdfExtension(String originalFileName) {
-		String baseName = StringUtils.isNotBlank(originalFileName)
-				? StringUtils.substringBeforeLast(originalFileName, DOT)
-				: "PDF";
-		return baseName + FileExtension.PDF.getExtension();
+		return getBaseName(originalFileName, "pdf") + FileExtension.PDF.getExtension();
 	}
 
 	private String updateFileWithZipExtension(String originalFileName) {
-		String baseName = StringUtils.isNotBlank(originalFileName)
-				? StringUtils.substringBeforeLast(originalFileName, DOT)
-				: "zipped";
-		return String.format(SPLIT_PAGE_ZIP_NAME_PATTERN, baseName);
+		return String.format(SPLIT_PAGE_ZIP_NAME_PATTERN, getBaseName(originalFileName, "zip"));
 	}
 
 	private String updateRangeSplitFileWithZipExtension(String originalFileName, int startPage, int endPage) {
-		String baseName = StringUtils.isNotBlank(originalFileName)
-				? StringUtils.substringBeforeLast(originalFileName, DOT)
-				: "split_zipped";
-		return String.format(RANGE_SPLIT_FILE_NAME_PATTERN, baseName, startPage, endPage);
+		return String.format(RANGE_SPLIT_FILE_NAME_PATTERN, getBaseName(originalFileName, "split_zip"), startPage,
+				endPage);
+	}
+
+	private String updateFileNameWithWatermark(String originalFileName) {
+		return String.format(FILE_NAME_WITH_WATERMARK_PATTERN, getBaseName(originalFileName, "pdf_with_watermark"));
 	}
 
 	private String updateImageZipName(String originalFileName) {
-		String baseName = StringUtils.isNotBlank(originalFileName)
-				? StringUtils.substringBeforeLast(originalFileName, DOT)
-				: "converted";
-		return String.format(IMAGE_ZIP_NAME_PATTERN, baseName);
+		return String.format(IMAGE_ZIP_NAME_PATTERN, getBaseName(originalFileName, "images_zip"));
 	}
 
 	private String updateFileWithNewExtension(String originalFileName, FileExtension fileExtension) {
-		String baseName = StringUtils.isNotBlank(originalFileName)
-				? StringUtils.substringBeforeLast(originalFileName, DOT)
-				: "converted";
-		return baseName + fileExtension.getExtension();
+		return getBaseName(originalFileName, "converted") + fileExtension.getExtension();
 	}
 
 	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {

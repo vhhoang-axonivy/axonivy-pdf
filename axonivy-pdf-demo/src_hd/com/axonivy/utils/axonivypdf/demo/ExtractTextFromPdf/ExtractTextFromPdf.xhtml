@@ -26,7 +26,7 @@
 				</h:panelGroup>
 
 				<p:commandButton value="Extract text and Download" ajax="false"
-					actionListener="#{pdfFactoryBean.extractHighlightedText}"
+					actionListener="#{pdfFactoryBean.extractTextFromPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
