@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,9 +25,11 @@ import org.primefaces.model.file.UploadedFile;
 import org.primefaces.model.file.UploadedFiles;
 
 import com.aspose.cells.Workbook;
+import com.aspose.pdf.Annotation;
 import com.aspose.pdf.Color;
 import com.aspose.pdf.FontRepository;
 import com.aspose.pdf.FontStyles;
+import com.aspose.pdf.HighlightAnnotation;
 import com.aspose.pdf.HorizontalAlignment;
 import com.aspose.pdf.ImageFormat;
 import com.aspose.pdf.ImagePlacement;
@@ -34,6 +37,7 @@ import com.aspose.pdf.ImagePlacementAbsorber;
 import com.aspose.pdf.Page;
 import com.aspose.pdf.Rotation;
 import com.aspose.pdf.TextFragment;
+import com.aspose.pdf.TextFragmentCollection;
 import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
 import com.aspose.pdf.XImage;
@@ -48,7 +52,10 @@ import com.aspose.words.SaveFormat;
 import com.aspose.words.WrapType;
 import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
+import com.axonivy.utils.axonivypdf.demo.enums.TextExtractedType;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
+
+import ch.ivyteam.ivy.environment.Ivy;
 
 @ManagedBean
 @ViewScoped
@@ -65,10 +72,10 @@ public class PdfFactoryBean {
 	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
 	private static final String IMAGE_NAME_PATTERN = "%s_page_%d_image_%d" + FileExtension.PNG.getExtension();
 	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_images_zipped" + FileExtension.ZIP.getExtension();
-//	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
 	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
 	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
+	private TextExtractedType textExtractedType = TextExtractedType.ALL;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
 	private DefaultStreamedContent fileForDownload;
@@ -103,6 +110,101 @@ public class PdfFactoryBean {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public void extractHighlightedText() {
+		Ivy.log().error("Extracted type: " + getTextExtractedType());
+		if (uploadedFile == null) {
+			return;
+		}
+
+		String originalName = uploadedFile.getFileName();
+
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream textStream = new ByteArrayOutputStream();
+				OutputStreamWriter writer = new OutputStreamWriter(textStream, StandardCharsets.UTF_8)) {
+
+			// Load the PDF document
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			StringBuilder highlightedText = new StringBuilder();
+
+			// Loop through all pages
+			for (Page page : pdfDocument.getPages()) {
+				for (Annotation annotation : page.getAnnotations()) {
+					// Filter only HighlightAnnotation
+					if (annotation instanceof HighlightAnnotation) {
+						HighlightAnnotation highlight = (HighlightAnnotation) annotation;
+
+						// Get all marked text fragments
+						TextFragmentCollection fragments = highlight.getMarkedTextFragments();
+						for (TextFragment tf : fragments) {
+							highlightedText.append(tf.getText()).append(System.lineSeparator());
+						}
+					}
+				}
+			}
+
+			// Write all highlighted text to stream
+			writer.write(highlightedText.toString());
+			writer.flush();
+
+			// Close PDF
+			pdfDocument.close();
+
+			// Prepare file for download
+			setFileForDownload(
+					buildFileStream(textStream.toByteArray(), replaceFileExtension(originalName, "_highlighted.txt")));
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void extractTextFromPdf() {
+		if (uploadedFile == null) {
+			return; // No file uploaded
+		}
+
+		String originalName = uploadedFile.getFileName();
+
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream textStream = new ByteArrayOutputStream();
+				OutputStreamWriter writer = new OutputStreamWriter(textStream, StandardCharsets.UTF_8)) {
+
+			// Load the uploaded PDF
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			// Create a TextAbsorber to extract text from all pages
+			com.aspose.pdf.TextAbsorber textAbsorber = new com.aspose.pdf.TextAbsorber();
+
+			// Accept the absorber for all pages
+			pdfDocument.getPages().accept(textAbsorber);
+
+			// Get extracted text
+			String extractedText = textAbsorber.getText();
+
+			// Write extracted text into the stream
+			writer.write(extractedText);
+			writer.flush();
+
+			// Close PDF document
+			pdfDocument.close();
+
+			// Prepare the file for download (your existing JSF utility)
+			setFileForDownload(buildFileStream(textStream.toByteArray(), replaceFileExtension(originalName, ".txt")));
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private String replaceFileExtension(String fileName, String newExtension) {
+		int dotIndex = fileName.lastIndexOf('.');
+		if (dotIndex == -1) {
+			return fileName + newExtension;
+		}
+		return fileName.substring(0, dotIndex) + newExtension;
 	}
 
 	public void extractImagesFromPdf() {
@@ -529,5 +631,13 @@ public class PdfFactoryBean {
 
 	public void setSelectedFileExtension(FileExtension selectedFileExtension) {
 		this.selectedFileExtension = selectedFileExtension;
+	}
+
+	public TextExtractedType getTextExtractedType() {
+		return textExtractedType;
+	}
+
+	public void setTextExtractedType(TextExtractedType textExtractedType) {
+		this.textExtractedType = textExtractedType;
 	}
 }

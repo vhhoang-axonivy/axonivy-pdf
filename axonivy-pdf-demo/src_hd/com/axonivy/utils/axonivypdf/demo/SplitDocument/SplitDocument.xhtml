@@ -25,10 +25,6 @@
 							process="form" update="@this form:select-one form:range-panel"
 							partialSubmit="true" />
 					</p:selectOneMenu>
-
-					<p:panelGrid id="rangePanel" columns="2"
-						rendered="#{pdfFactoryBean.splitOption == 'RANGE'}">
-					</p:panelGrid>
 				</h:panelGroup>
 				<p:panelGrid id="range-panel" columns="2"
 					style="display: #{pdfFactoryBean.splitOption eq 'RANGE' ? 'block' : 'none'}">
