@@ -7,24 +7,16 @@
 	xmlns:pe="http://primefaces.org/ui/extensions">
 <h:body>
 	<ui:composition template="/layouts/frame-10-full-width.xhtml">
-		<ui:define name="title">ConvertPdfToOtherDocumentTypes</ui:define>
+		<ui:define name="title">ExtractImagesFromPdf</ui:define>
 		<ui:define name="content">
-			<h2>Convert PDF to other document types</h2>
+			<h2>Extract images from PDF</h2>
 			<h:form id="form" enctype="multipart/form-data">
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
 					label="Choose PDF" />
 
-				<h:panelGroup id="select-one">
-					<p:selectOneMenu value="#{pdfFactoryBean.selectedFileExtension}">
-						<f:selectItems value="#{pdfFactoryBean.otherDocumentTypes}"
-							var="type" itemLabel="#{type.name()}" itemValue="#{type}" />
-						<p:ajax process="form" partialSubmit="true" />
-					</p:selectOneMenu>
-				</h:panelGroup>
-
 				<p:commandButton value="Convert and Download" ajax="false"
-					actionListener="#{pdfFactoryBean.convertPdfToOtherDocumentTypes}"
+					actionListener="#{pdfFactoryBean.extractImagesFromPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>

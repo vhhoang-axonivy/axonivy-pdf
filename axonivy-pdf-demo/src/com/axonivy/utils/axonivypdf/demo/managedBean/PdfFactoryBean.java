@@ -28,11 +28,15 @@ import com.aspose.pdf.Color;
 import com.aspose.pdf.FontRepository;
 import com.aspose.pdf.FontStyles;
 import com.aspose.pdf.HorizontalAlignment;
+import com.aspose.pdf.ImageFormat;
+import com.aspose.pdf.ImagePlacement;
+import com.aspose.pdf.ImagePlacementAbsorber;
 import com.aspose.pdf.Page;
 import com.aspose.pdf.Rotation;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
+import com.aspose.pdf.XImage;
 import com.aspose.pdf.devices.JpegDevice;
 import com.aspose.pdf.facades.PdfFileEditor;
 import com.aspose.words.Document;
@@ -46,8 +50,6 @@ import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
 
-import ch.ivyteam.ivy.environment.Ivy;
-
 @ManagedBean
 @ViewScoped
 public class PdfFactoryBean {
@@ -58,10 +60,12 @@ public class PdfFactoryBean {
 	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
 	private static final String PDF_CONTENT_TYPE = "application/pdf";
 	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
-	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
 	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d";
+	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
 	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
+	private static final String IMAGE_NAME_PATTERN = "%s_page_%d_image_%d" + FileExtension.PNG.getExtension();
 	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_images_zipped" + FileExtension.ZIP.getExtension();
+//	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
 	private static final String SPLIT_PAGE_ZIP_NAME_PATTERN = "%s_split_zipped" + FileExtension.ZIP.getExtension();
 	private static final String RANGE_SPLIT_FILE_NAME_PATTERN = "%s_page_%d_to_%d" + FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
@@ -98,6 +102,45 @@ public class PdfFactoryBean {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+
+	public void extractImagesFromPdf() {
+		if (uploadedFile == null) {
+			return;
+		}
+
+		try (InputStream input = uploadedFile.getInputStream();) {
+			String originalName = uploadedFile.getFileName();
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
+			int imageCount = 1;
+			int pageCount = 1;
+
+			for (Page page : pdfDocument.getPages()) {
+				ImagePlacementAbsorber imageAbsorber = new ImagePlacementAbsorber();
+				page.accept(imageAbsorber);
+
+				for (ImagePlacement ip : imageAbsorber.getImagePlacements()) {
+					XImage image = ip.getImage();
+
+					try (ByteArrayOutputStream imageStream = new ByteArrayOutputStream()) {
+						image.save(imageStream, ImageFormat.Png);
+						Path imageFile = tempDir.resolve(String.format(IMAGE_NAME_PATTERN,
+								StringUtils.substringBeforeLast(originalName, DOT), pageCount, imageCount));
+						Files.write(imageFile, imageStream.toByteArray());
+						imageCount++;
+					}
+				}
+				pageCount++;
+			}
+
+			byte[] zipBytes = Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME));
+			setFileForDownload(buildFileStream(zipBytes, updateImageZipName(originalName)));
+
+			pdfDocument.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
