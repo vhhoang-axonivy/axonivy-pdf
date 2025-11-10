@@ -1,5 +1,6 @@
 package com.axonivy.utils.axonivypdf.demo.managedBean;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -18,6 +19,7 @@ import java.util.zip.ZipOutputStream;
 import javax.annotation.PostConstruct;
 import javax.faces.bean.ManagedBean;
 import javax.faces.view.ViewScoped;
+import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.model.DefaultStreamedContent;
@@ -31,9 +33,11 @@ import com.aspose.pdf.FontRepository;
 import com.aspose.pdf.FontStyles;
 import com.aspose.pdf.HighlightAnnotation;
 import com.aspose.pdf.HorizontalAlignment;
+import com.aspose.pdf.Image;
 import com.aspose.pdf.ImageFormat;
 import com.aspose.pdf.ImagePlacement;
 import com.aspose.pdf.ImagePlacementAbsorber;
+import com.aspose.pdf.MarginInfo;
 import com.aspose.pdf.Page;
 import com.aspose.pdf.Rotation;
 import com.aspose.pdf.TextFragment;
@@ -42,14 +46,8 @@ import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
 import com.aspose.pdf.XImage;
 import com.aspose.pdf.devices.JpegDevice;
-import com.aspose.pdf.facades.PdfFileEditor;
 import com.aspose.words.Document;
-import com.aspose.words.DocumentBuilder;
-import com.aspose.words.PageSetup;
-import com.aspose.words.RelativeHorizontalPosition;
-import com.aspose.words.RelativeVerticalPosition;
 import com.aspose.words.SaveFormat;
-import com.aspose.words.WrapType;
 import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
 import com.axonivy.utils.axonivypdf.demo.enums.TextExtractType;
@@ -358,50 +356,28 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
+		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			String originalFileName = uploadedFile.getFileName();
-			Document doc = new Document();
-			DocumentBuilder builder = new DocumentBuilder(doc);
+			BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(uploadedFile.getContent()));
+			int widthPx = bufferedImage.getWidth();
+			int heightPx = bufferedImage.getHeight();
 
-			com.aspose.words.Shape image = builder.insertImage(input);
-			image.setRelativeHorizontalPosition(RelativeHorizontalPosition.PAGE);
-			image.setRelativeVerticalPosition(RelativeVerticalPosition.PAGE);
-			image.setLeft(0);
-			image.setTop(0);
-			image.setWrapType(WrapType.NONE);
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document();
+			Page page = pdfDocument.getPages().add();
+			page.getPageInfo().setWidth(widthPx);
+			page.getPageInfo().setHeight(heightPx);
+			page.getPageInfo().setMargin(new MarginInfo(0, 0, 0, 0));
 
-			PageSetup ps = builder.getPageSetup();
-			ps.setPageWidth(image.getWidth());
-			ps.setPageHeight(image.getHeight());
+			Image image = new Image();
+			image.setImageStream(uploadedFile.getInputStream());
+			page.getParagraphs().add(image);
+			pdfDocument.save(output);
+			pdfDocument.close();
 
-			doc.save(output, SaveFormat.PDF);
+			pdfDocument.close();
 			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalFileName)));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void merge() {
-		if (uploadedFiles == null || uploadedFiles.getFiles().isEmpty()) {
-			return;
-		}
-
-		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			int uploadedFilesSize = uploadedFiles.getFiles().size();
-			InputStream[] inputStreams = new InputStream[uploadedFilesSize];
-
-			for (int i = 0; i < uploadedFilesSize; i++) {
-				inputStreams[i] = uploadedFiles.getFiles().get(i).getInputStream();
-			}
-
-			PdfFileEditor editor = new PdfFileEditor();
-			boolean result = editor.concatenate(inputStreams, output);
-			if (!result) {
-				return;
-			}
-			setFileForDownload(buildFileStream(output.toByteArray(), MERGED_DOCUMENT_NAME));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
