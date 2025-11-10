@@ -52,10 +52,8 @@ import com.aspose.words.SaveFormat;
 import com.aspose.words.WrapType;
 import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
-import com.axonivy.utils.axonivypdf.demo.enums.TextExtractedType;
+import com.axonivy.utils.axonivypdf.demo.enums.TextExtractType;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
-
-import ch.ivyteam.ivy.environment.Ivy;
 
 @ManagedBean
 @ViewScoped
@@ -64,11 +62,14 @@ public class PdfFactoryBean {
 	private static final float DEFAULT_FONT_SIZE = 12;
 	private static final double WATERMARK_OPACITY = 0.3;
 	private static final float DEFAULT_WATERMARK_FONT_SIZE = 40;
+	private static final String EXTRACTED_TEXT = "extracted_text";
+	private static final String EXTRACTED_HIGHLIGHTED_TEXT = "extracted_highlighted_text";
 	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
 	private static final String PDF_CONTENT_TYPE = "application/pdf";
 	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
 	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d";
 	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
+	private static final String TXT_FILE_NAME_PATTERN = "%s_%s" + FileExtension.TXT.getExtension();
 	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
 	private static final String IMAGE_NAME_PATTERN = "%s_page_%d_image_%d" + FileExtension.PNG.getExtension();
 	private static final String IMAGE_ZIP_NAME_PATTERN = "%s_images_zipped" + FileExtension.ZIP.getExtension();
@@ -77,7 +78,7 @@ public class PdfFactoryBean {
 	private static final String FILE_NAME_WITH_WATERMARK_PATTERN = "%s_with_watermark"
 			+ FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
-	private TextExtractedType textExtractedType = TextExtractedType.ALL;
+	private TextExtractType textExtractType = TextExtractType.ALL;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
 	private DefaultStreamedContent fileForDownload;
@@ -138,8 +139,7 @@ public class PdfFactoryBean {
 
 		pdfDocument.close();
 
-		setFileForDownload(
-				buildFileStream(textStream.toByteArray(), replaceFileExtension(originalFileName, "_highlighted.txt")));
+		setFileForDownload(buildFileStream(textStream.toByteArray(), updateTxtFileName(originalFileName)));
 	}
 
 	public void extractAllText(String originalFileName, InputStream input, ByteArrayOutputStream textStream,
@@ -156,7 +156,7 @@ public class PdfFactoryBean {
 
 		pdfDocument.close();
 
-		setFileForDownload(buildFileStream(textStream.toByteArray(), replaceFileExtension(originalFileName, ".txt")));
+		setFileForDownload(buildFileStream(textStream.toByteArray(), updateTxtFileName(originalFileName)));
 	}
 
 	public void extractTextFromPdf() {
@@ -169,7 +169,7 @@ public class PdfFactoryBean {
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream textStream = new ByteArrayOutputStream();
 				OutputStreamWriter writer = new OutputStreamWriter(textStream, StandardCharsets.UTF_8)) {
-			if (TextExtractedType.ALL.equals(textExtractedType)) {
+			if (TextExtractType.ALL.equals(textExtractType)) {
 				extractAllText(originalFileName, input, textStream, writer);
 			} else {
 				extractHighlightedText(originalFileName, input, textStream, writer);
@@ -177,14 +177,6 @@ public class PdfFactoryBean {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private String replaceFileExtension(String fileName, String newExtension) {
-		int dotIndex = fileName.lastIndexOf('.');
-		if (dotIndex == -1) {
-			return fileName + newExtension;
-		}
-		return fileName.substring(0, dotIndex) + newExtension;
 	}
 
 	public void extractImagesFromPdf() {
@@ -522,6 +514,15 @@ public class PdfFactoryBean {
 		return getBaseName(originalFileName, "converted") + fileExtension.getExtension();
 	}
 
+	private String updateTxtFileName(String originalFileName) {
+		if (TextExtractType.ALL.equals(textExtractType)) {
+			return String.format(TXT_FILE_NAME_PATTERN, getBaseName(originalFileName, EXTRACTED_TEXT), EXTRACTED_TEXT);
+		}
+		return String.format(TXT_FILE_NAME_PATTERN, getBaseName(originalFileName, EXTRACTED_HIGHLIGHTED_TEXT),
+				EXTRACTED_HIGHLIGHTED_TEXT);
+	}
+
+//	TXT_FILE_NAME_PATTERN
 	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
 		boolean isInvalid = false;
 
@@ -609,11 +610,11 @@ public class PdfFactoryBean {
 		this.selectedFileExtension = selectedFileExtension;
 	}
 
-	public TextExtractedType getTextExtractedType() {
-		return textExtractedType;
+	public TextExtractType getTextExtractType() {
+		return textExtractType;
 	}
 
-	public void setTextExtractedType(TextExtractedType textExtractedType) {
-		this.textExtractedType = textExtractedType;
+	public void setTextExtractType(TextExtractType textExtractType) {
+		this.textExtractType = textExtractType;
 	}
 }
