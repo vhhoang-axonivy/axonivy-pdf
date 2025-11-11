@@ -7,52 +7,59 @@
 	xmlns:pe="http://primefaces.org/ui/extensions">
 <h:body>
 	<ui:composition template="/layouts/frame-10-full-width.xhtml">
-		<ui:define name="title">PageOperations</ui:define>
+		<ui:define name="title">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/Title')}</ui:define>
 		<ui:define name="content">
+			<h1>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/Header')}</h1>
 			<h:form id="form" enctype="multipart/form-data">
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
-					label="Choose PDF" />
-				<h2>Rotate pages</h2>
-				<p:commandButton value="Rotate pages and download" ajax="false"
-					actionListener="#{pdfFactoryBean.rotatePages}"
+					label="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/Common/ChoosePdfFile')}" />
+					
+				<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/RotatePages')}</h2>
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/RotatePagesAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.rotatePages}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 
-				<h2>Add page number</h2>
-				<p:commandButton value="Add page numbers and download" ajax="false"
-					actionListener="#{pdfFactoryBean.addPageNumbers}"
+				<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddPageNumbers')}</h2>
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddPageNumbersAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.addPageNumbers}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 
-				<h2>Add header</h2>
-				<p:outputLabel for="header-text" styleClass="block">Header text</p:outputLabel>
+				<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddHeader')}</h2>
+				<p:outputLabel for="header-text" styleClass="block">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/HeaderText')}</p:outputLabel>
 				<p:inputText id="header-text" styleClass="block mt-2"
 					value="#{pdfFactoryBean.headerText}" />
-				<p:commandButton value="Add header and download" ajax="false"
-					actionListener="#{pdfFactoryBean.addHeader}" icon="pi pi-download"
-					styleClass="mt-3 ui-button-outlined block">
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddHeaderAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.addHeader}"
+					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 
-				<h2>Add footer</h2>
-				<p:outputLabel for="footer-text" styleClass="block">Footer text</p:outputLabel>
+				<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddFooter')}</h2>
+				<p:outputLabel for="footer-text" styleClass="block">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/FooterText')}</p:outputLabel>
 				<p:inputText id="footer-text" styleClass="block mt-2"
 					value="#{pdfFactoryBean.footerText}" />
-				<p:commandButton value="Add footer and download" ajax="false"
-					actionListener="#{pdfFactoryBean.addFooter}" icon="pi pi-download"
-					styleClass="mt-3 ui-button-outlined block">
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddFooterAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.addFooter}"
+					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>
 
-				<h2>Add watermark</h2>
-				<p:outputLabel for="watermark-text" styleClass="block">Watermark text</p:outputLabel>
+				<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddWatermark')}</h2>
+				<p:outputLabel for="watermark-text" styleClass="block">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/WatermarkText')}</p:outputLabel>
 				<p:inputText id="watermark-text" styleClass="block mt-2"
 					value="#{pdfFactoryBean.watermarkText}" />
-				<p:commandButton value="Add watermark and download" ajax="false"
-					actionListener="#{pdfFactoryBean.addWatermark}"
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/PageOperations/AddWatermarkAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.addWatermark}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>

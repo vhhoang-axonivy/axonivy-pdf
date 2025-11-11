@@ -1,8 +1,8 @@
 {
   "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
-  "id" : "19A4DFCA6AC393D2",
+  "id" : "19A729043B3E6D55",
   "config" : {
-    "data" : "com.axonivy.utils.axonivypdf.demo.ConvertImageToPdfData"
+    "data" : "com.axonivy.utils.axonivypdf.demo.SplitPdfData"
   },
   "elements" : [ {
       "id" : "f0",
@@ -11,7 +11,7 @@
       "config" : {
         "signature" : "start",
         "request" : {
-          "name" : "<%=ivy.cms.co(\"/Processes/ConvertImageToPdf/name\")%>"
+          "name" : "<%=ivy.cms.co(\"/Processes/SplitPdf/name\")%>"
         }
       },
       "visual" : {
@@ -24,14 +24,14 @@
       "id" : "f1",
       "type" : "TaskEnd",
       "visual" : {
-        "at" : { "x" : 416, "y" : 64 }
+        "at" : { "x" : 392, "y" : 64 }
       }
     }, {
       "id" : "f3",
       "type" : "DialogCall",
-      "name" : "Convert image to PDF",
+      "name" : "Split PDF",
       "config" : {
-        "dialog" : "com.axonivy.utils.axonivypdf.demo.ConvertImageToPdf:start()"
+        "dialog" : "com.axonivy.utils.axonivypdf.demo.SplitPdf:start()"
       },
       "visual" : {
         "at" : { "x" : 248, "y" : 64 }

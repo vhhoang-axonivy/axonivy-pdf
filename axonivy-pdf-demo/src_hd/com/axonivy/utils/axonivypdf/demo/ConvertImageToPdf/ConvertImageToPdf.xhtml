@@ -7,17 +7,18 @@
 	xmlns:pe="http://primefaces.org/ui/extensions">
 <h:body>
 	<ui:composition template="/layouts/frame-10-full-width.xhtml">
-		<ui:define name="title">ConvertImageToPdf</ui:define>
+		<ui:define name="title">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertImageToPdf/Title')}</ui:define>
 		<ui:define name="content">
-			<h2>Convert image to PDF</h2>
+			<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertImageToPdf/Header')}</h2>
 			<h:form id="form" enctype="multipart/form-data">
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}"
-					accept=".jpg, .jpeg, .png" skinSimple="true"
-					mode="simple" allowTypes="/(\.|\/)(jpg|jpeg|png)$/"
-					label="Upload image" />
+					accept=".jpg, .jpeg, .png" skinSimple="true" mode="simple"
+					allowTypes="/(\.|\/)(jpg|jpeg|png)$/"
+					label="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertImageToPdf/ChooseImage')}" />
 
-				<p:commandButton value="Convert and download" ajax="false"
-					actionListener="#{pdfFactoryBean.convertImageToPdf}"
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/Common/ConvertAndDownload')}"
+					ajax="false" actionListener="#{pdfFactoryBean.convertImageToPdf}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
 				</p:commandButton>

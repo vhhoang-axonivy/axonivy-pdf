@@ -7,13 +7,13 @@
 	xmlns:pe="http://primefaces.org/ui/extensions">
 <h:body>
 	<ui:composition template="/layouts/frame-10-full-width.xhtml">
-		<ui:define name="title">ConvertPdfToOtherDocumentTypes</ui:define>
+		<ui:define name="title">#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertPdfToOtherDocumentTypes/Title')}</ui:define>
 		<ui:define name="content">
-			<h2>Convert PDF to other document types</h2>
+			<h2>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertPdfToOtherDocumentTypes/Header')}</h2>
 			<h:form id="form" enctype="multipart/form-data">
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
-					label="Choose PDF file" />
+					label="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/Common/ChoosePdfFile')}" />
 
 				<h:panelGroup id="select-one">
 					<p:selectOneMenu value="#{pdfFactoryBean.selectedFileExtension}">
@@ -23,7 +23,9 @@
 					</p:selectOneMenu>
 				</h:panelGroup>
 
-				<p:commandButton value="Convert and download" ajax="false"
+				<p:commandButton
+					value="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/Common/ConvertAndDownload')}"
+					ajax="false"
 					actionListener="#{pdfFactoryBean.convertPdfToOtherDocumentTypes}"
 					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />

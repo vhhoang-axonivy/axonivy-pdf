@@ -9,7 +9,10 @@
       "type" : "RequestStart",
       "name" : "start",
       "config" : {
-        "signature" : "start"
+        "signature" : "start",
+        "request" : {
+          "name" : "<%=ivy.cms.co(\"/Processes/ExtractTextFromPdf/name\")%>"
+        }
       },
       "visual" : {
         "at" : { "x" : 96, "y" : 64 }
