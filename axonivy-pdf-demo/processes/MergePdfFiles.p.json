@@ -1,8 +1,8 @@
 {
   "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
-  "id" : "19A3439B73681475",
+  "id" : "19A722650A7B71A9",
   "config" : {
-    "data" : "com.axonivy.utils.axonivypdf.demo.CombinePdfFilesData"
+    "data" : "com.axonivy.utils.axonivypdf.demo.MergePdfFilesData"
   },
   "elements" : [ {
       "id" : "f0",
@@ -21,23 +21,17 @@
       "id" : "f1",
       "type" : "TaskEnd",
       "visual" : {
-        "at" : { "x" : 416, "y" : 64 }
+        "at" : { "x" : 408, "y" : 64 }
       }
     }, {
       "id" : "f3",
       "type" : "DialogCall",
-      "name" : "Combine PDF files",
+      "name" : "Merge PDF files",
       "config" : {
-        "dialog" : "com.axonivy.utils.axonivypdf.demo.CombinePdfFiles:start()",
-        "output" : {
-          "map" : {
-            "out" : "in",
-            "out.fileList" : "result.files"
-          }
-        }
+        "dialog" : "com.axonivy.utils.axonivypdf.demo.MergePdfFiles:start()"
       },
       "visual" : {
-        "at" : { "x" : 248, "y" : 64 }
+        "at" : { "x" : 256, "y" : 64 }
       },
       "connect" : [
         { "id" : "f4", "to" : "f1", "color" : "default" }

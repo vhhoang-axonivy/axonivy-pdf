@@ -7,15 +7,15 @@
 	xmlns:pe="http://primefaces.org/ui/extensions">
 <h:body>
 	<ui:composition template="/layouts/frame-10-full-width.xhtml">
-		<ui:define name="title">CombinePdfFiles</ui:define>
+		<ui:define name="title">MergePdfFiles</ui:define>
 		<ui:define name="content">
-			<h2>Upload and Combine PDF Files</h2>
+			<h2>Upload and merge PDF Files</h2>
 			<h:form id="multiple" enctype="multipart/form-data">
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFiles}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
 					multiple="true" label="Choose PDF files" />
 
-				<p:commandButton value="Combine and download" ajax="false"
+				<p:commandButton value="Merge and download" ajax="false"
 					actionListener="#{pdfFactoryBean.merge}" icon="pi pi-download"
 					styleClass="mt-3 ui-button-outlined block">
 					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />

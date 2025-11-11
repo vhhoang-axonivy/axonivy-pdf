@@ -1,9 +1,9 @@
 {
   "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
-  "id" : "19A343F7088CE26D",
+  "id" : "19A7225CEC2D2300",
   "kind" : "HTML_DIALOG",
   "config" : {
-    "data" : "com.axonivy.utils.axonivypdf.demo.CombinePdfFiles.CombinePdfFilesData"
+    "data" : "com.axonivy.utils.axonivypdf.demo.MergePdfFiles.MergePdfFilesData"
   },
   "elements" : [ {
       "id" : "f0",
@@ -11,15 +11,7 @@
       "name" : "start()",
       "config" : {
         "signature" : "start",
-        "result" : {
-          "params" : [
-            { "name" : "files", "type" : "List<java.io.File>", "desc" : "" }
-          ],
-          "map" : {
-            "result.files" : "in.files"
-          }
-        },
-        "guid" : "19A343F7089B3AE2"
+        "guid" : "19A7225CEC232D4C"
       },
       "visual" : {
         "at" : { "x" : 96, "y" : 64 }
@@ -38,10 +30,10 @@
       "type" : "HtmlDialogEventStart",
       "name" : "close",
       "config" : {
-        "guid" : "19A343F708B16934"
+        "guid" : "19A7225CEC31F289"
       },
       "visual" : {
-        "at" : { "x" : 96, "y" : 144 }
+        "at" : { "x" : 96, "y" : 160 }
       },
       "connect" : [
         { "id" : "f5", "to" : "f4" }
@@ -50,7 +42,7 @@
       "id" : "f4",
       "type" : "HtmlDialogExit",
       "visual" : {
-        "at" : { "x" : 224, "y" : 144 }
+        "at" : { "x" : 224, "y" : 160 }
       }
     } ]
 }
