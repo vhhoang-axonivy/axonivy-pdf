@@ -26,28 +26,6 @@
       <version>${aspose.version}</version>
       <classifier>jdk17</classifier>
     </dependency>
-    <dependency>
-      <groupId>com.aspose</groupId>
-      <artifactId>aspose-cells</artifactId>
-      <version>${aspose.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.aspose</groupId>
-      <artifactId>aspose-words</artifactId>
-      <version>${aspose.version}</version>
-      <classifier>jdk17</classifier>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.axonivy.utils.docscommon</groupId>
-      <artifactId>axonivy-docs-common</artifactId>
-      <version>[1.0.0,)</version>
-    </dependency>
   </dependencies>
   <repositories>
     <repository>

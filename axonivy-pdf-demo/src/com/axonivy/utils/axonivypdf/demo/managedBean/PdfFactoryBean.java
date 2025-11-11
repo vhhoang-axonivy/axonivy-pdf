@@ -26,7 +26,6 @@ import org.primefaces.model.DefaultStreamedContent;
 import org.primefaces.model.file.UploadedFile;
 import org.primefaces.model.file.UploadedFiles;
 
-import com.aspose.cells.Workbook;
 import com.aspose.pdf.Annotation;
 import com.aspose.pdf.Color;
 import com.aspose.pdf.FontRepository;
@@ -52,12 +51,13 @@ import com.aspose.pdf.facades.EncodingType;
 import com.aspose.pdf.facades.FontStyle;
 import com.aspose.pdf.facades.FormattedText;
 import com.aspose.pdf.facades.PdfFileEditor;
-import com.aspose.words.Document;
-import com.aspose.words.SaveFormat;
 import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
 import com.axonivy.utils.axonivypdf.demo.enums.SplitOption;
 import com.axonivy.utils.axonivypdf.demo.enums.TextExtractType;
+import com.axonivy.utils.axonivypdf.demo.exception.PdfOperationException;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
+
+import ch.ivyteam.ivy.environment.Ivy;
 
 @ManagedBean
 @ViewScoped
@@ -92,8 +92,8 @@ public class PdfFactoryBean {
 	private TextExtractType textExtractType = TextExtractType.ALL;
 	private Integer startPage;
 	private Integer endPage;
-	private String headerText;
-	private String footerText;
+	private String headerText = "HEADER";
+	private String footerText = "FOOTER";
 	private String watermarkText = SAMPLE_WATERMARK;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
@@ -131,7 +131,11 @@ public class PdfFactoryBean {
 	}
 
 	public void addHeader() {
-		if (uploadedFile == null || StringUtils.isBlank(headerText)) {
+		if (uploadedFile == null) {
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
+		}
+
+		if (StringUtils.isBlank(footerText)) {
 			return;
 		}
 
@@ -158,7 +162,11 @@ public class PdfFactoryBean {
 	}
 
 	public void addFooter() {
-		if (uploadedFile == null || StringUtils.isBlank(footerText)) {
+		if (uploadedFile == null) {
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
+		}
+
+		if (StringUtils.isBlank(footerText)) {
 			return;
 		}
 
@@ -186,7 +194,7 @@ public class PdfFactoryBean {
 
 	public void addWatermark() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		String originalFileName = uploadedFile.getFileName();
@@ -218,7 +226,7 @@ public class PdfFactoryBean {
 
 	public void rotatePages() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		String originalFileName = uploadedFile.getFileName();
@@ -241,7 +249,7 @@ public class PdfFactoryBean {
 
 	public void addPageNumbers() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		String originalFileName = uploadedFile.getFileName();
@@ -320,7 +328,7 @@ public class PdfFactoryBean {
 
 	public void extractTextFromPdf() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		String originalFileName = uploadedFile.getFileName();
@@ -340,7 +348,7 @@ public class PdfFactoryBean {
 
 	public void extractImagesFromPdf() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		try (InputStream input = uploadedFile.getInputStream();) {
@@ -402,7 +410,7 @@ public class PdfFactoryBean {
 
 	public void convertPdfToOtherDocumentTypes() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		String orginalFileName = uploadedFile.getFileName();
@@ -433,7 +441,7 @@ public class PdfFactoryBean {
 
 	public void splitAndDownloadZipPdf() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream()) {
@@ -468,9 +476,7 @@ public class PdfFactoryBean {
 
 	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalFileName) throws IOException {
 		int pageSize = pdfDocument.getPages().size();
-		if (isInputInvalid(getStartPage(), getEndPage(), pageSize)) {
-			return;
-		}
+		isInputInvalid(getStartPage(), getEndPage(), pageSize);
 
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
 			com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
@@ -514,7 +520,7 @@ public class PdfFactoryBean {
 
 	public void convertImageToPdf() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 		String originalFileName = uploadedFile.getFileName();
 
@@ -544,7 +550,7 @@ public class PdfFactoryBean {
 
 	public void merge() {
 		if (uploadedFiles == null || uploadedFiles.getFiles().isEmpty()) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -566,28 +572,16 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void convertToPdf() {
+	public void convertHtmlToPdf() {
 		if (uploadedFile == null) {
-			return;
+			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 		String originalFileName = uploadedFile.getFileName();
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
 			String fileName = originalFileName.toLowerCase();
-
-			if (fileName.endsWith(FileExtension.DOC.getExtension())
-					|| fileName.endsWith(FileExtension.DOCX.getExtension())
-					|| fileName.endsWith(FileExtension.ODT.getExtension())
-					|| fileName.endsWith(FileExtension.TXT.getExtension())
-					|| fileName.endsWith(FileExtension.MD.getExtension())) {
-				Document doc = new Document(input);
-				doc.save(output, SaveFormat.PDF);
-			} else if (fileName.endsWith(FileExtension.XLS.getExtension())
-					|| fileName.endsWith(FileExtension.XLSX.getExtension())) {
-				Workbook workbook = new Workbook(input);
-				workbook.save(output, com.aspose.cells.SaveFormat.PDF);
-			} else if (fileName.endsWith(FileExtension.HTML.getExtension())) {
+			if (fileName.endsWith(FileExtension.HTML.getExtension())) {
 				String html = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 				com.aspose.pdf.Document pdfDoc = new com.aspose.pdf.Document();
 				Page page = pdfDoc.getPages().add();
@@ -601,9 +595,8 @@ public class PdfFactoryBean {
 				com.aspose.pdf.Document pdfDoc = new com.aspose.pdf.Document(input);
 				pdfDoc.save(output);
 				pdfDoc.close();
-			} else {
-				throw new IllegalArgumentException("Unsupported file type: " + fileName);
 			}
+
 			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalFileName)));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -664,22 +657,21 @@ public class PdfFactoryBean {
 				EXTRACTED_HIGHLIGHTED_TEXT);
 	}
 
-	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
-		boolean isInvalid = false;
-
+	public void isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
 		if (startPage < 0 || endPage < 0) {
-			isInvalid = true;
-		}
-
-		if (startPage > endPage) {
-			isInvalid = true;
+//			Ivy.log().error("Start page or end page is negative");
+			throw new PdfOperationException("Please enter a valid start page and end page");
 		}
 
 		if (endPage > originalDocPageSize || startPage > originalDocPageSize) {
-			isInvalid = true;
+			Ivy.log().error("Start page or end page is greater than total page");
+			throw new PdfOperationException("Please enter a valid start page and end page");
 		}
 
-		return isInvalid;
+		if (startPage > endPage) {
+			Ivy.log().error("Start page is greater than end page");
+			throw new PdfOperationException("Start page cannot be greater than end page");
+		}
 	}
 
 	private DefaultStreamedContent buildFileStream(byte[] byteContent, String fileName) {
