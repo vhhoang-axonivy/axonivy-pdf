@@ -46,6 +46,7 @@ import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
 import com.aspose.pdf.XImage;
 import com.aspose.pdf.devices.JpegDevice;
+import com.aspose.pdf.facades.PdfFileEditor;
 import com.aspose.words.Document;
 import com.aspose.words.SaveFormat;
 import com.axonivy.utils.axonivypdf.demo.enums.FileExtension;
@@ -383,6 +384,30 @@ public class PdfFactoryBean {
 		}
 	}
 
+	public void merge() {
+		if (uploadedFiles == null || uploadedFiles.getFiles().isEmpty()) {
+			return;
+		}
+
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			int uploadedFilesSize = uploadedFiles.getFiles().size();
+			InputStream[] inputStreams = new InputStream[uploadedFilesSize];
+
+			for (int i = 0; i < uploadedFilesSize; i++) {
+				inputStreams[i] = uploadedFiles.getFiles().get(i).getInputStream();
+			}
+
+			PdfFileEditor editor = new PdfFileEditor();
+			boolean result = editor.concatenate(inputStreams, output);
+			if (!result) {
+				return;
+			}
+			setFileForDownload(buildFileStream(output.toByteArray(), MERGED_DOCUMENT_NAME));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void convertToPdf() {
 		if (uploadedFile == null) {
 			return;
@@ -498,7 +523,6 @@ public class PdfFactoryBean {
 				EXTRACTED_HIGHLIGHTED_TEXT);
 	}
 
-//	TXT_FILE_NAME_PATTERN
 	public boolean isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
 		boolean isInvalid = false;
 
