@@ -39,13 +39,18 @@ import com.aspose.pdf.ImagePlacement;
 import com.aspose.pdf.ImagePlacementAbsorber;
 import com.aspose.pdf.MarginInfo;
 import com.aspose.pdf.Page;
+import com.aspose.pdf.PageNumberStamp;
 import com.aspose.pdf.Rotation;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextFragmentCollection;
 import com.aspose.pdf.TextStamp;
 import com.aspose.pdf.VerticalAlignment;
+import com.aspose.pdf.WatermarkArtifact;
 import com.aspose.pdf.XImage;
 import com.aspose.pdf.devices.JpegDevice;
+import com.aspose.pdf.facades.EncodingType;
+import com.aspose.pdf.facades.FontStyle;
+import com.aspose.pdf.facades.FormattedText;
 import com.aspose.pdf.facades.PdfFileEditor;
 import com.aspose.words.Document;
 import com.aspose.words.SaveFormat;
@@ -59,15 +64,22 @@ import com.axonivy.utils.axonivypdf.service.PdfFactory;
 public class PdfFactoryBean {
 	private static final String DOT = ".";
 	private static final float DEFAULT_FONT_SIZE = 12;
-	private static final double WATERMARK_OPACITY = 0.3;
-	private static final float DEFAULT_WATERMARK_FONT_SIZE = 40;
+	private static final float DEFAULT_PAGE_NUMBER_FONT_SIZE = 14.0F;
+	private static final float DEFAULT_WATERMARK_FONT_SIZE = 72.0F;
+	private static final double DEFAULT_WATERMARK_OPACITY = 0.5;
+	private static final double DEFAULT_WATERMARK_ROTATION = 45;
 	private static final String EXTRACTED_TEXT = "extracted_text";
 	private static final String EXTRACTED_HIGHLIGHTED_TEXT = "extracted_highlighted_text";
+	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
 	private static final String TEMP_ZIP_FILE_NAME = "split_pages";
 	private static final String PDF_CONTENT_TYPE = "application/pdf";
 	private static final String SAMPLE_WATERMARK = "ASPOSE_WATERMARK";
 	private static final String SPLIT_PAGE_NAME_PATTERN = "%s_page_%d";
-	private static final String TIMES_NEW_ROMAN_FONT = "Times New Roman";
+	private static final String ROTATED_DOCUMENT_NAME_PATTERN = "%s_rotated" + FileExtension.PDF.getExtension();
+	private static final String DOCUMENT_WITH_HEADER_NAME_PATTERN = "%s_with_header" + FileExtension.PDF.getExtension();
+	private static final String DOCUMENT_WITH_FOOTER_NAME_PATTERN = "%s_with_footer" + FileExtension.PDF.getExtension();
+	private static final String DOCUMENT_WITH_PAGE_NUMBER_NAME_PATTERN = "%s_numbered"
+			+ FileExtension.PDF.getExtension();
 	private static final String TXT_FILE_NAME_PATTERN = "%s_%s" + FileExtension.TXT.getExtension();
 	private static final String MERGED_DOCUMENT_NAME = "merged_document" + FileExtension.PDF.getExtension();
 	private static final String IMAGE_NAME_PATTERN = "%s_page_%d_image_%d" + FileExtension.PNG.getExtension();
@@ -78,11 +90,14 @@ public class PdfFactoryBean {
 			+ FileExtension.PDF.getExtension();
 	private SplitOption splitOption = SplitOption.ALL;
 	private TextExtractType textExtractType = TextExtractType.ALL;
+	private Integer startPage;
+	private Integer endPage;
+	private String headerText;
+	private String footerText;
+	private String watermarkText = SAMPLE_WATERMARK;
 	private UploadedFile uploadedFile;
 	private UploadedFiles uploadedFiles;
 	private DefaultStreamedContent fileForDownload;
-	private Integer startPage;
-	private Integer endPage;
 	private List<FileExtension> otherDocumentTypes = Arrays.asList(FileExtension.DOCX, FileExtension.XLSX,
 			FileExtension.PPTX, FileExtension.JPG, FileExtension.JPEG);
 	private FileExtension selectedFileExtension = FileExtension.DOCX;
@@ -102,6 +117,7 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
+
 		if (SplitOption.RANGE.equals(splitOption)) {
 			try (InputStream input = uploadedFile.getInputStream()) {
 				com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
@@ -111,6 +127,150 @@ public class PdfFactoryBean {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+
+	public void addHeader() {
+		if (uploadedFile == null || StringUtils.isBlank(headerText)) {
+			return;
+		}
+
+		String originalFileName = uploadedFile.getFileName();
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			TextStamp textStamp = new TextStamp(headerText);
+			textStamp.setTopMargin(10);
+			textStamp.setHorizontalAlignment(HorizontalAlignment.Center);
+			textStamp.setVerticalAlignment(VerticalAlignment.Top);
+
+			for (Page page : pdfDocument.getPages()) {
+				page.addStamp(textStamp);
+			}
+			pdfDocument.save(output);
+			pdfDocument.close();
+
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithHeaderName(originalFileName)));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addFooter() {
+		if (uploadedFile == null || StringUtils.isBlank(footerText)) {
+			return;
+		}
+
+		String originalFileName = uploadedFile.getFileName();
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			TextStamp textStamp = new TextStamp(footerText);
+			textStamp.setBottomMargin(10);
+			textStamp.setHorizontalAlignment(HorizontalAlignment.Center);
+			textStamp.setVerticalAlignment(VerticalAlignment.Bottom);
+
+			for (Page page : pdfDocument.getPages()) {
+				page.addStamp(textStamp);
+			}
+			pdfDocument.save(output);
+			pdfDocument.close();
+
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithFooterName(originalFileName)));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addWatermark() {
+		if (uploadedFile == null) {
+			return;
+		}
+
+		String originalFileName = uploadedFile.getFileName();
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			FormattedText formattedText = new FormattedText(watermarkText, java.awt.Color.BLUE, FontStyle.TimesRoman,
+					EncodingType.Identity_h, true, DEFAULT_WATERMARK_FONT_SIZE);
+			WatermarkArtifact artifact = new WatermarkArtifact();
+			artifact.setText(formattedText);
+			artifact.setArtifactHorizontalAlignment(HorizontalAlignment.Center);
+			artifact.setArtifactVerticalAlignment(VerticalAlignment.Center);
+			artifact.setRotation(DEFAULT_WATERMARK_ROTATION);
+			artifact.setOpacity(DEFAULT_WATERMARK_OPACITY);
+			artifact.setBackground(false);
+
+			for (Page page : pdfDocument.getPages()) {
+				page.getArtifacts().add(artifact);
+			}
+			pdfDocument.save(output);
+			pdfDocument.close();
+
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileNameWithWatermark(originalFileName)));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void rotatePages() {
+		if (uploadedFile == null) {
+			return;
+		}
+
+		String originalFileName = uploadedFile.getFileName();
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
+
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			for (Page page : pdfDocument.getPages()) {
+				page.setRotate(Rotation.on90);
+			}
+			pdfDocument.save(output);
+			pdfDocument.close();
+
+			setFileForDownload(buildFileStream(output.toByteArray(), updateRotatedFileName(originalFileName)));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addPageNumbers() {
+		if (uploadedFile == null) {
+			return;
+		}
+
+		String originalFileName = uploadedFile.getFileName();
+		try (InputStream input = uploadedFile.getInputStream();
+				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
+
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+
+			PageNumberStamp pageNumberStamp = new PageNumberStamp();
+			pageNumberStamp.setBackground(false);
+			pageNumberStamp.setFormat("Page # of " + pdfDocument.getPages().size());
+			pageNumberStamp.setBottomMargin(10);
+			pageNumberStamp.setHorizontalAlignment(HorizontalAlignment.Center);
+			pageNumberStamp.setStartingNumber(1);
+
+			pageNumberStamp.getTextState().setFont(FontRepository.findFont(TIMES_NEW_ROMAN_FONT));
+			pageNumberStamp.getTextState().setFontSize(DEFAULT_PAGE_NUMBER_FONT_SIZE);
+			pageNumberStamp.getTextState().setFontStyle(FontStyles.Bold);
+			pageNumberStamp.getTextState().setForegroundColor(Color.getBlack());
+
+			for (Page page : pdfDocument.getPages()) {
+				page.addStamp(pageNumberStamp);
+			}
+			pdfDocument.save(output);
+			pdfDocument.close();
+
+			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPageNumberName(originalFileName)));
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -245,9 +405,9 @@ public class PdfFactoryBean {
 			return;
 		}
 
+		String orginalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			String orginalFileName = uploadedFile.getFileName();
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
 			if (FileExtension.DOCX == getSelectedFileExtension()) {
@@ -276,7 +436,6 @@ public class PdfFactoryBean {
 			return;
 		}
 		String originalFileName = uploadedFile.getFileName();
-
 		try (InputStream input = uploadedFile.getInputStream()) {
 			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
@@ -377,7 +536,6 @@ public class PdfFactoryBean {
 			pdfDocument.save(output);
 			pdfDocument.close();
 
-			pdfDocument.close();
 			setFileForDownload(buildFileStream(output.toByteArray(), updateFileWithPdfExtension(originalFileName)));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -416,7 +574,7 @@ public class PdfFactoryBean {
 
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			String fileName = uploadedFile.getFileName().toLowerCase();
+			String fileName = originalFileName.toLowerCase();
 
 			if (fileName.endsWith(FileExtension.DOC.getExtension())
 					|| fileName.endsWith(FileExtension.DOCX.getExtension())
@@ -452,39 +610,6 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void addWatermark() {
-		if (uploadedFile == null) {
-			return;
-		}
-		String originalFileName = uploadedFile.getFileName();
-
-		try (InputStream inputStream = uploadedFile.getInputStream();
-				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(inputStream);
-
-			TextStamp stamp = new TextStamp(SAMPLE_WATERMARK);
-			stamp.setBackground(true);
-			stamp.setHorizontalAlignment(HorizontalAlignment.Center);
-			stamp.setVerticalAlignment(VerticalAlignment.Center);
-			stamp.setRotate(Rotation.None);
-			stamp.getTextState().setFont(FontRepository.findFont(TIMES_NEW_ROMAN_FONT));
-			stamp.getTextState().setFontSize(DEFAULT_WATERMARK_FONT_SIZE);
-			stamp.getTextState().setFontStyle(FontStyles.Bold);
-			stamp.getTextState().setForegroundColor(Color.getLightGray());
-			stamp.setOpacity(WATERMARK_OPACITY);
-
-			for (Page page : pdfDocument.getPages()) {
-				page.addStamp(stamp);
-			}
-			pdfDocument.save(output);
-			pdfDocument.close();
-			setFileForDownload(buildFileStream(output.toByteArray(), updateFileNameWithWatermark(originalFileName)));
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	private String getBaseName(String originalFileName, String substitudeName) {
 		return StringUtils.isNotBlank(originalFileName) ? StringUtils.substringBeforeLast(originalFileName, DOT)
 				: substitudeName;
@@ -511,8 +636,24 @@ public class PdfFactoryBean {
 		return String.format(IMAGE_ZIP_NAME_PATTERN, getBaseName(originalFileName, "images_zip"));
 	}
 
+	private String updateRotatedFileName(String originalFileName) {
+		return String.format(ROTATED_DOCUMENT_NAME_PATTERN, getBaseName(originalFileName, "rotated"));
+	}
+
 	private String updateFileWithNewExtension(String originalFileName, FileExtension fileExtension) {
 		return getBaseName(originalFileName, "converted") + fileExtension.getExtension();
+	}
+
+	private String updateFileWithPageNumberName(String originalFileName) {
+		return String.format(DOCUMENT_WITH_PAGE_NUMBER_NAME_PATTERN, getBaseName(originalFileName, "numbered"));
+	}
+
+	private String updateFileWithHeaderName(String originalFileName) {
+		return String.format(DOCUMENT_WITH_HEADER_NAME_PATTERN, getBaseName(originalFileName, "with_header"));
+	}
+
+	private String updateFileWithFooterName(String originalFileName) {
+		return String.format(DOCUMENT_WITH_FOOTER_NAME_PATTERN, getBaseName(originalFileName, "with_footerer"));
 	}
 
 	private String updateTxtFileName(String originalFileName) {
@@ -616,5 +757,29 @@ public class PdfFactoryBean {
 
 	public void setTextExtractType(TextExtractType textExtractType) {
 		this.textExtractType = textExtractType;
+	}
+
+	public String getHeaderText() {
+		return headerText;
+	}
+
+	public void setHeaderText(String headerText) {
+		this.headerText = headerText;
+	}
+
+	public String getFooterText() {
+		return footerText;
+	}
+
+	public void setFooterText(String footerText) {
+		this.footerText = footerText;
+	}
+
+	public String getWatermarkText() {
+		return watermarkText;
+	}
+
+	public void setWatermarkText(String watermarkText) {
+		this.watermarkText = watermarkText;
 	}
 }

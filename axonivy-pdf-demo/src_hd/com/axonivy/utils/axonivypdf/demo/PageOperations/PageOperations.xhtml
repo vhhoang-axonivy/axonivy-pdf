@@ -1,0 +1,64 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:ic="http://ivyteam.ch/jsf/component"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:pe="http://primefaces.org/ui/extensions">
+<h:body>
+	<ui:composition template="/layouts/frame-10-full-width.xhtml">
+		<ui:define name="title">PageOperations</ui:define>
+		<ui:define name="content">
+			<h:form id="form" enctype="multipart/form-data">
+				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
+					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
+					label="Choose PDF" />
+				<h2>Rotate pages</h2>
+				<p:commandButton value="Rotate pages and download" ajax="false"
+					actionListener="#{pdfFactoryBean.rotatePages}"
+					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
+				</p:commandButton>
+
+				<h2>Add page number</h2>
+				<p:commandButton value="Add page numbers and download" ajax="false"
+					actionListener="#{pdfFactoryBean.addPageNumbers}"
+					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
+				</p:commandButton>
+
+				<h2>Add header</h2>
+				<p:outputLabel for="header-text" styleClass="block">Header text</p:outputLabel>
+				<p:inputText id="header-text" styleClass="block mt-2"
+					value="#{pdfFactoryBean.headerText}" />
+				<p:commandButton value="Add header and download" ajax="false"
+					actionListener="#{pdfFactoryBean.addHeader}" icon="pi pi-download"
+					styleClass="mt-3 ui-button-outlined block">
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
+				</p:commandButton>
+
+				<h2>Add footer</h2>
+				<p:outputLabel for="footer-text" styleClass="block">Footer text</p:outputLabel>
+				<p:inputText id="footer-text" styleClass="block mt-2"
+					value="#{pdfFactoryBean.footerText}" />
+				<p:commandButton value="Add footer and download" ajax="false"
+					actionListener="#{pdfFactoryBean.addFooter}" icon="pi pi-download"
+					styleClass="mt-3 ui-button-outlined block">
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
+				</p:commandButton>
+
+				<h2>Add watermark</h2>
+				<p:outputLabel for="watermark-text" styleClass="block">Watermark text</p:outputLabel>
+				<p:inputText id="watermark-text" styleClass="block mt-2"
+					value="#{pdfFactoryBean.watermarkText}" />
+				<p:commandButton value="Add watermark and download" ajax="false"
+					actionListener="#{pdfFactoryBean.addWatermark}"
+					icon="pi pi-download" styleClass="mt-3 ui-button-outlined block">
+					<p:fileDownload value="#{pdfFactoryBean.fileForDownload}" />
+				</p:commandButton>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+
+</html>

@@ -1,9 +1,9 @@
 {
   "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
-  "id" : "19A5C826303C3CDA",
+  "id" : "19A707AC671BF700",
   "kind" : "HTML_DIALOG",
   "config" : {
-    "data" : "com.axonivy.utils.axonivypdf.demo.AddWatermarkToPdf.AddWatermarkToPdfData"
+    "data" : "com.axonivy.utils.axonivypdf.demo.PageOperations.PageOperationsData"
   },
   "elements" : [ {
       "id" : "f0",
@@ -11,7 +11,7 @@
       "name" : "start()",
       "config" : {
         "signature" : "start",
-        "guid" : "19A5C8263142DDE3"
+        "guid" : "19A707AC675B66EE"
       },
       "visual" : {
         "at" : { "x" : 96, "y" : 64 }
@@ -30,7 +30,7 @@
       "type" : "HtmlDialogEventStart",
       "name" : "close",
       "config" : {
-        "guid" : "19A5C82634F3289A"
+        "guid" : "19A707AC68473F03"
       },
       "visual" : {
         "at" : { "x" : 96, "y" : 160 }

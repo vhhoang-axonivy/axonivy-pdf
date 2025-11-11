@@ -1,8 +1,8 @@
 {
   "$schema" : "https://json-schema.axonivy.com/process/13.1.2/process.json",
-  "id" : "19A5C865BA2CA28F",
+  "id" : "19A707DC2018B0A5",
   "config" : {
-    "data" : "com.axonivy.utils.axonivypdf.demo.AddWatermarkToPdfData"
+    "data" : "com.axonivy.utils.axonivypdf.demo.PageOperationsData"
   },
   "elements" : [ {
       "id" : "f0",
@@ -26,12 +26,12 @@
     }, {
       "id" : "f3",
       "type" : "DialogCall",
-      "name" : "Add watermark to PDF",
+      "name" : "Page Operations",
       "config" : {
-        "dialog" : "com.axonivy.utils.axonivypdf.demo.AddWatermarkToPdf:start()"
+        "dialog" : "com.axonivy.utils.axonivypdf.demo.PageOperations:start()"
       },
       "visual" : {
-        "at" : { "x" : 248, "y" : 64 }
+        "at" : { "x" : 256, "y" : 64 }
       },
       "connect" : [
         { "id" : "f4", "to" : "f1", "color" : "default" }
