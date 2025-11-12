@@ -41,6 +41,7 @@ import com.aspose.pdf.MarginInfo;
 import com.aspose.pdf.Page;
 import com.aspose.pdf.PageNumberStamp;
 import com.aspose.pdf.Rotation;
+import com.aspose.pdf.SaveFormat;
 import com.aspose.pdf.TextAbsorber;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextFragmentCollection;
@@ -409,11 +410,11 @@ public class PdfFactoryBean {
 			Document pdfDocument = new Document(input);
 
 			if (FileExtension.DOCX == getSelectedFileExtension()) {
-				pdfDocument.save(output, com.aspose.pdf.SaveFormat.DocX);
+				pdfDocument.save(output, SaveFormat.DocX);
 			} else if (FileExtension.XLSX == getSelectedFileExtension()) {
-				pdfDocument.save(output, com.aspose.pdf.SaveFormat.Excel);
-			} else if (FileExtension.PPTX == getSelectedFileExtension()) {
-				pdfDocument.save(output, com.aspose.pdf.SaveFormat.Pptx);
+				pdfDocument.save(output, SaveFormat.Excel);
+			} else if (FileExtension.XLSX == getSelectedFileExtension()) {
+				pdfDocument.save(output, SaveFormat.Excel);
 			} else if (FileExtension.JPG == getSelectedFileExtension()) {
 				convertPdfToImagesZip(pdfDocument, orginalFileName, FileExtension.JPG.getExtension());
 				return;
