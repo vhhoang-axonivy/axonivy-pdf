@@ -110,6 +110,9 @@ public class PdfFactoryBean {
 	public void onSplitOptionChange() {
 		if (SplitOption.RANGE.equals(splitOption)) {
 			initPageRange();
+		} else {
+			setStartPage(1);
+			setEndPage(1);
 		}
 	}
 
@@ -117,16 +120,13 @@ public class PdfFactoryBean {
 		if (uploadedFile == null) {
 			return;
 		}
-
-		if (SplitOption.RANGE.equals(splitOption)) {
-			try (InputStream input = uploadedFile.getInputStream()) {
-				com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-				setStartPage(1);
-				setEndPage(pdfDocument.getPages().size());
-				pdfDocument.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		try (InputStream input = uploadedFile.getInputStream()) {
+			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			setStartPage(1);
+			setEndPage(pdfDocument.getPages().size());
+			pdfDocument.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -439,39 +439,35 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void splitAndDownloadZipPdf() {
+	public void splitAndDownloadZipPdf() throws IOException {
 		if (uploadedFile == null) {
 			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 		String originalFileName = uploadedFile.getFileName();
-		try (InputStream input = uploadedFile.getInputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+		InputStream input = uploadedFile.getInputStream();
+		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
 
-			if (SplitOption.ALL.equals(splitOption)) {
-				Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
-				int pageCount = 1;
+		if (SplitOption.ALL.equals(splitOption)) {
+			Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
+			int pageCount = 1;
 
-				for (Page pdfPage : pdfDocument.getPages()) {
-					com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
-					newDoc.getPages().add(pdfPage);
+			for (Page pdfPage : pdfDocument.getPages()) {
+				com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
+				newDoc.getPages().add(pdfPage);
 
-					Path pageFile = tempDir
-							.resolve(String.format(SPLIT_PAGE_NAME_PATTERN + FileExtension.PDF.getExtension(),
-									StringUtils.substringBeforeLast(originalFileName, DOT), pageCount));
-					newDoc.save(pageFile.toString());
-					newDoc.close();
-					pageCount++;
-				}
-				setFileForDownload(buildFileStream(Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)),
-						updateFileWithZipExtension(originalFileName)));
-			} else {
-				handleSplitByRange(pdfDocument, originalFileName);
+				Path pageFile = tempDir
+						.resolve(String.format(SPLIT_PAGE_NAME_PATTERN + FileExtension.PDF.getExtension(),
+								StringUtils.substringBeforeLast(originalFileName, DOT), pageCount));
+				newDoc.save(pageFile.toString());
+				newDoc.close();
+				pageCount++;
 			}
-			pdfDocument.close();
-
-		} catch (Exception e) {
-			e.printStackTrace();
+			setFileForDownload(buildFileStream(Files.readAllBytes(zipDirectory(tempDir, TEMP_ZIP_FILE_NAME)),
+					updateFileWithZipExtension(originalFileName)));
+		} else {
+			handleSplitByRange(pdfDocument, originalFileName);
 		}
+		pdfDocument.close();
 	}
 
 	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalFileName) throws IOException {
@@ -659,17 +655,14 @@ public class PdfFactoryBean {
 
 	public void isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
 		if (startPage < 0 || endPage < 0) {
-//			Ivy.log().error("Start page or end page is negative");
 			throw new PdfOperationException("Please enter a valid start page and end page");
 		}
 
 		if (endPage > originalDocPageSize || startPage > originalDocPageSize) {
-			Ivy.log().error("Start page or end page is greater than total page");
 			throw new PdfOperationException("Please enter a valid start page and end page");
 		}
 
 		if (startPage > endPage) {
-			Ivy.log().error("Start page is greater than end page");
 			throw new PdfOperationException("Start page cannot be greater than end page");
 		}
 	}
