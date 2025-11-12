@@ -28,6 +28,7 @@ import org.primefaces.model.file.UploadedFiles;
 
 import com.aspose.pdf.Annotation;
 import com.aspose.pdf.Color;
+import com.aspose.pdf.Document;
 import com.aspose.pdf.FontRepository;
 import com.aspose.pdf.FontStyles;
 import com.aspose.pdf.HighlightAnnotation;
@@ -40,6 +41,7 @@ import com.aspose.pdf.MarginInfo;
 import com.aspose.pdf.Page;
 import com.aspose.pdf.PageNumberStamp;
 import com.aspose.pdf.Rotation;
+import com.aspose.pdf.TextAbsorber;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextFragmentCollection;
 import com.aspose.pdf.TextStamp;
@@ -119,7 +121,7 @@ public class PdfFactoryBean {
 			return;
 		}
 		try (InputStream input = uploadedFile.getInputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 			setStartPage(1);
 			setEndPage(pdfDocument.getPages().size());
 			pdfDocument.close();
@@ -133,14 +135,10 @@ public class PdfFactoryBean {
 			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
-		if (StringUtils.isBlank(footerText)) {
-			return;
-		}
-
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			TextStamp textStamp = new TextStamp(headerText);
 			textStamp.setTopMargin(10);
@@ -164,14 +162,10 @@ public class PdfFactoryBean {
 			throw new PdfOperationException("No file uploaded. Please upload a workbook file first.");
 		}
 
-		if (StringUtils.isBlank(footerText)) {
-			return;
-		}
-
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			TextStamp textStamp = new TextStamp(footerText);
 			textStamp.setBottomMargin(10);
@@ -198,7 +192,7 @@ public class PdfFactoryBean {
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			FormattedText formattedText = new FormattedText(watermarkText, java.awt.Color.BLUE, FontStyle.TimesRoman,
 					EncodingType.Identity_h, true, DEFAULT_WATERMARK_FONT_SIZE);
@@ -230,8 +224,7 @@ public class PdfFactoryBean {
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
-
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			for (Page page : pdfDocument.getPages()) {
 				page.setRotate(Rotation.on90);
@@ -253,8 +246,7 @@ public class PdfFactoryBean {
 		String originalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream();) {
-
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			PageNumberStamp pageNumberStamp = new PageNumberStamp();
 			pageNumberStamp.setBackground(false);
@@ -282,7 +274,7 @@ public class PdfFactoryBean {
 
 	public void extractHighlightedText(String originalFileName, InputStream input, ByteArrayOutputStream textStream,
 			OutputStreamWriter writer) throws IOException {
-		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+		Document pdfDocument = new Document(input);
 
 		StringBuilder highlightedText = new StringBuilder();
 
@@ -309,8 +301,8 @@ public class PdfFactoryBean {
 
 	public void extractAllText(String originalFileName, InputStream input, ByteArrayOutputStream textStream,
 			OutputStreamWriter writer) throws IOException {
-		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
-		com.aspose.pdf.TextAbsorber textAbsorber = new com.aspose.pdf.TextAbsorber();
+		Document pdfDocument = new Document(input);
+		TextAbsorber textAbsorber = new TextAbsorber();
 
 		pdfDocument.getPages().accept(textAbsorber);
 
@@ -351,7 +343,7 @@ public class PdfFactoryBean {
 
 		try (InputStream input = uploadedFile.getInputStream();) {
 			String originalFileName = uploadedFile.getFileName();
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 			Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
 			int imageCount = 1;
 			int pageCount = 1;
@@ -383,7 +375,7 @@ public class PdfFactoryBean {
 		}
 	}
 
-	public void convertPdfToImagesZip(com.aspose.pdf.Document pdfDocument, String originalFileName, String extention)
+	public void convertPdfToImagesZip(Document pdfDocument, String originalFileName, String extention)
 			throws IOException {
 		Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
 
@@ -414,7 +406,7 @@ public class PdfFactoryBean {
 		String orginalFileName = uploadedFile.getFileName();
 		try (InputStream input = uploadedFile.getInputStream();
 				ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+			Document pdfDocument = new Document(input);
 
 			if (FileExtension.DOCX == getSelectedFileExtension()) {
 				pdfDocument.save(output, com.aspose.pdf.SaveFormat.DocX);
@@ -443,14 +435,14 @@ public class PdfFactoryBean {
 		}
 		String originalFileName = uploadedFile.getFileName();
 		InputStream input = uploadedFile.getInputStream();
-		com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document(input);
+		Document pdfDocument = new Document(input);
 
 		if (SplitOption.ALL.equals(splitOption)) {
 			Path tempDir = Files.createTempDirectory(TEMP_ZIP_FILE_NAME);
 			int pageCount = 1;
 
 			for (Page pdfPage : pdfDocument.getPages()) {
-				com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
+				Document newDoc = new Document();
 				newDoc.getPages().add(pdfPage);
 
 				Path pageFile = tempDir
@@ -468,12 +460,12 @@ public class PdfFactoryBean {
 		pdfDocument.close();
 	}
 
-	private void handleSplitByRange(com.aspose.pdf.Document pdfDocument, String originalFileName) throws IOException {
+	private void handleSplitByRange(Document pdfDocument, String originalFileName) throws IOException {
 		int pageSize = pdfDocument.getPages().size();
 		isInputInvalid(getStartPage(), getEndPage(), pageSize);
 
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			com.aspose.pdf.Document newDoc = new com.aspose.pdf.Document();
+			Document newDoc = new Document();
 
 			for (int i = getStartPage(); i <= getEndPage(); i++) {
 				Page pdfPage = pdfDocument.getPages().get_Item(i);
@@ -524,7 +516,7 @@ public class PdfFactoryBean {
 			int widthPx = bufferedImage.getWidth();
 			int heightPx = bufferedImage.getHeight();
 
-			com.aspose.pdf.Document pdfDocument = new com.aspose.pdf.Document();
+			Document pdfDocument = new Document();
 			Page page = pdfDocument.getPages().add();
 			page.getPageInfo().setWidth(widthPx);
 			page.getPageInfo().setHeight(heightPx);
@@ -577,7 +569,7 @@ public class PdfFactoryBean {
 			String fileName = originalFileName.toLowerCase();
 			if (fileName.endsWith(FileExtension.HTML.getExtension())) {
 				String html = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-				com.aspose.pdf.Document pdfDoc = new com.aspose.pdf.Document();
+				Document pdfDoc = new Document();
 				Page page = pdfDoc.getPages().add();
 				TextFragment text = new TextFragment(html);
 				text.getTextState().setFontSize(DEFAULT_FONT_SIZE);
@@ -586,7 +578,7 @@ public class PdfFactoryBean {
 				pdfDoc.save(output);
 				pdfDoc.close();
 			} else if (fileName.endsWith(FileExtension.PDF.getExtension())) {
-				com.aspose.pdf.Document pdfDoc = new com.aspose.pdf.Document(input);
+				Document pdfDoc = new Document(input);
 				pdfDoc.save(output);
 				pdfDoc.close();
 			}

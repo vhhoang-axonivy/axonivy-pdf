@@ -14,7 +14,7 @@
 				<p:fileUpload value="#{pdfFactoryBean.uploadedFile}" accept=".pdf"
 					skinSimple="true" mode="simple" allowTypes="/(\.|\/)(pdf)$/"
 					label="#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/Common/ChoosePdfFile')}" />
-
+				<h4>#{ivy.cms.co('/Dialogs/com/axonivy/utils/axonivypdf/demo/ConvertPdfToOtherDocumentTypes/SelectExtension')}</h4>
 				<h:panelGroup id="select-one">
 					<p:selectOneMenu value="#{pdfFactoryBean.selectedFileExtension}">
 						<f:selectItems value="#{pdfFactoryBean.otherDocumentTypes}"

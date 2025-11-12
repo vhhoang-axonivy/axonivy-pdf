@@ -18,6 +18,7 @@ Dialogs:
               Title: Convert image to PDF
             ConvertPdfToOtherDocumentTypes:
               Header: 'Axon Ivy Pdf Demo: Convert PDF file to other document types'
+              SelectExtension: Select desired extension
               Title: Convert PDF to other document types
             ExtractImagesFromPdf:
               ExtractImagesAndDownload: Extract images and download
