@@ -57,8 +57,6 @@ import com.axonivy.utils.axonivypdf.demo.enums.TextExtractType;
 import com.axonivy.utils.axonivypdf.demo.exception.PdfOperationException;
 import com.axonivy.utils.axonivypdf.service.PdfFactory;
 
-import ch.ivyteam.ivy.environment.Ivy;
-
 @ManagedBean
 @ViewScoped
 public class PdfFactoryBean {
@@ -654,7 +652,7 @@ public class PdfFactoryBean {
 	}
 
 	public void isInputInvalid(int startPage, int endPage, int originalDocPageSize) {
-		if (startPage < 0 || endPage < 0) {
+		if (startPage <= 0 || endPage <= 0) {
 			throw new PdfOperationException("Please enter a valid start page and end page");
 		}
 
